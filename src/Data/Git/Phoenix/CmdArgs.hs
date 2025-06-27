@@ -1,12 +1,13 @@
 module Data.Git.Phoenix.CmdArgs where
 
+import Control.Concurrent
+import Data.Tagged (Tagged (..))
 import Data.Time.Clock
 import Data.Time.Format
 import Options.Applicative
 import Relude
 import System.FilePath ((</>))
 import System.IO.Unsafe
-import Data.Tagged (Tagged (..))
 
 data InDir
 data OutDir
@@ -14,17 +15,26 @@ data OutDir
 data CmdArgs
   = CmdArgs
     { inDir :: Tagged InDir FilePath
+    , maxOpenFiles :: Int
     , outDir :: Tagged OutDir FilePath
     } deriving (Show, Eq)
 
 execWithArgs :: MonadIO m => (CmdArgs -> m a) -> m a
 execWithArgs a = a =<< liftIO (execParser $ info (cmdp <**> helper) phelp)
   where
-    cmdp = CmdArgs <$> inputDirOp <*> outputDirOp
+    cmdp = CmdArgs <$> inputDirOp <*> maxOpenFilesOp <*> outputDirOp
     phelp =
       progDesc
         "git-phoenix reconstructs GIT objects after disk recovery"
         <> fullDesc
+
+maxOpenFilesOp :: Parser Int
+maxOpenFilesOp =
+  option auto
+  ( long "max-open-files"
+    <> value (unsafePerformIO getNumCapabilities)
+    <> showDefault
+    <> help "How many files to read simultaniosly.")
 
 defaultOutputDir :: IO FilePath
 defaultOutputDir =

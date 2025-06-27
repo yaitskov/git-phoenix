@@ -38,6 +38,7 @@ common base
     , optparse-applicative
     , relude >= 1.2.2 && < 2
     , tagged < 1
+    , unliftio
 
 library
   import: base
@@ -57,6 +58,7 @@ library
 
 executable git-phoenix
   import: base
+  ghc-options: -Wall -threaded +RTS -N2 -RTS
   main-is: GitPhoenix.hs
   other-modules:
       Paths_git_phoenix
