@@ -53,6 +53,7 @@ library
     , filepath                < 2
     , generic-data            < 2
     , generic-deriving        < 2
+    , SHA                     < 2
     , zlib                    < 1
     , pretty-hex              < 2
     , monad-time              < 1
