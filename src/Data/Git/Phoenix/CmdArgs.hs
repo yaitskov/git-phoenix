@@ -32,6 +32,7 @@ maxOpenFilesOp :: Parser Int
 maxOpenFilesOp =
   option auto
   ( long "max-open-files"
+    <> short 'f'
     <> value (unsafePerformIO getNumCapabilities)
     <> showDefault
     <> help "How many files to read simultaniosly.")

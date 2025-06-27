@@ -59,7 +59,7 @@ library
 
 executable git-phoenix
   import: base
-  ghc-options: -Wall -threaded +RTS -N2 -RTS
+  ghc-options: -Wall -threaded +RTS -N -RTS
   main-is: GitPhoenix.hs
   other-modules:
       Paths_git_phoenix
