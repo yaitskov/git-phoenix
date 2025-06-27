@@ -1,0 +1,68 @@
+cabal-version: 3.0
+name:          git-phoenix
+version:       0.0.1
+synopsis:      Recove Git repositories from disk recovery tool output (photorec)
+description:
+
+homepage:      http://github.com/yaitskov/git-phoenix
+license:       BSD-3-Clause
+author:        Daniil Iaitskov
+maintainer:    dyaitskov@gmail.com
+copyright:     Daniil Iaitkov 2025
+category:      System
+build-type:    Simple
+bug-reports:   https://github.com/yaitskov/git-phoenix/issues
+extra-doc-files:
+  changelog.md
+tested-with:
+  GHC == 9.12.2
+
+source-repository head
+  type:
+    git
+  location:
+    https://github.com/yaitskov/git-phoenix.git
+
+common base
+  default-language: GHC2024
+  ghc-options: -Wall
+  default-extensions:
+    DefaultSignatures
+    NoImplicitPrelude
+    OverloadedLabels
+    OverloadedStrings
+    TemplateHaskell
+  build-depends:
+      base >=4.7 && < 5
+    , bytestring >= 0.12.1 && < 1
+    , generic-lens >= 2.2.2 && < 3
+    , lens >= 5.3.2 && < 6
+    , relude >= 1.2.2 && < 2
+
+library
+  import: base
+  hs-source-dirs: src
+  exposed-modules:
+    Data.Git.Phoenix
+  build-depends:
+      casing                  < 1
+    , conduit                 < 2
+    , containers              < 1
+    , directory               < 2
+    , filepath                < 2
+    , generic-data            < 2
+    , generic-deriving        < 2
+    , zlib                    < 1
+    , pretty-hex              < 2
+    , monad-time              < 1
+    , mtl                     < 3
+    , pretty-simple           < 5
+    , regex-compat            < 1
+    , regex-tdfa              < 2
+    , safe-exceptions         < 1
+    , template-haskell        < 3
+    , temporary               < 2
+    , time                    < 2
+    , trace-embrace           >= 1.2.0 && < 2
+    , unix                    < 3
+    , wl-pprint-text          < 2

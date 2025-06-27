@@ -1,0 +1,14 @@
+{
+  "nixpkgs": {
+    "branch": "master",
+    "repo": "/home/dan/pro/nixpkgs",
+    "rev": "da5af46a09eeb2b1c8f4193d626727d5b7460601",
+    "type": "git"
+  },
+  "upload-doc-to-hackage": {
+    "sha256": "0r1q21dngyalrm0ad204y470wr3s89mssbw9qi195hpgbp8qs8d2",
+    "type": "tarball",
+    "url": "https://github.com/yaitskov/upload-doc-to-hackage/archive/a180b14b21610ce39f296ad7b9dcf6dfe9ac69cf.tar.gz",
+    "url_template": "https://github.com/yaitskov/upload-doc-to-hackage/archive/a180b14b21610ce39f296ad7b9dcf6dfe9ac69cf.tar.gz"
+  }
+}
