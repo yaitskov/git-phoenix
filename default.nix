@@ -21,7 +21,7 @@ let
     });
 
   sources = [
-    "^(trace-embrace.yaml|src|test).*$"
+    "^(trace-embrace.yaml|app|src|test).*$"
     "^changelog[.]md$"
     "^.*\\.cabal$"
   ];

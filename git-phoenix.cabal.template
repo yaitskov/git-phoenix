@@ -28,42 +28,41 @@ common base
   ghc-options: -Wall
   default-extensions:
     DefaultSignatures
+    MultilineStrings
     NoImplicitPrelude
-    OverloadedLabels
     OverloadedStrings
-    TemplateHaskell
   build-depends:
       base >=4.7 && < 5
     , bytestring >= 0.12.1 && < 1
-    , generic-lens >= 2.2.2 && < 3
-    , lens >= 5.3.2 && < 6
+    , directory < 2
+    , optparse-applicative
     , relude >= 1.2.2 && < 2
+    , tagged < 1
 
 library
   import: base
   hs-source-dirs: src
   exposed-modules:
     Data.Git.Phoenix
+    Data.Git.Phoenix.CmdArgs
   build-depends:
-      casing                  < 1
-    , conduit                 < 2
+      conduit                 < 2
     , containers              < 1
-    , directory               < 2
     , filepath                < 2
-    , generic-data            < 2
-    , generic-deriving        < 2
     , SHA                     < 2
     , zlib                    < 1
     , pretty-hex              < 2
-    , monad-time              < 1
-    , mtl                     < 3
-    , pretty-simple           < 5
-    , regex-compat            < 1
-    , regex-tdfa              < 2
-    , safe-exceptions         < 1
-    , template-haskell        < 3
-    , temporary               < 2
     , time                    < 2
     , trace-embrace           >= 1.2.0 && < 2
-    , unix                    < 3
-    , wl-pprint-text          < 2
+
+executable git-phoenix
+  import: base
+  main-is: GitPhoenix.hs
+  other-modules:
+      Paths_git_phoenix
+  autogen-modules:
+      Paths_git_phoenix
+  hs-source-dirs:
+      app
+  build-depends:
+      git-phoenix
