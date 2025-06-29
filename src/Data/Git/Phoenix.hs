@@ -42,22 +42,91 @@ type PhoenixM m =
 
 type PhoenixCoCon m = (PhoenixM m, MonadResource m)
 
-mkGitObject :: PhoenixM m => FilePath -> m (Maybe GitObject)
-mkGitObject fp = do
+-- skipOnSomeE :: (MonadUnliftIO m, Monoid a) => (SomeException -> m ()) -> m a -> m a
+
+data Commit
+  = Commit
+    { message :: L.ByteString
+    , file :: FilePath
+    -- , ts :: UTCTime
+    -- , parent :: Maybe (Digest SHA1State)
+    } deriving (Show)
+
+extractAuthor :: L.ByteString -> (L.ByteString, L.ByteString)
+extractAuthor bs =
+  case L.dropWhile (/= fromIntegral (ord '\n')) bs of
+    "" -> ("", "")
+    bs' ->
+      if author `L.isPrefixOf` bs'
+      then L.break (== fromIntegral (ord '<')) $ L.drop (L.length author) bs'
+      else extractAuthor $ L.drop 1 bs'
+  where
+    author = "\nauthor "
+
+extractMessage :: L.ByteString -> L.ByteString
+extractMessage bs =
+  case L.uncons bs of
+    Just (10, bs') ->
+      case L.uncons bs' of
+        Just (10, bs'') -> bs''
+        Just (_, bs'') -> extractMessage bs''
+        Nothing -> ""
+    Just (_, bs') -> extractMessage bs'
+    Nothing -> ""
+
+filterCommit :: PhoenixM m => L.ByteString -> FilePath -> m (Maybe Commit)
+filterCommit targetAuthor fp = withCompressed fp go
+  where
+    go bs
+      | "commit " `L.isPrefixOf` bs =
+        case extractAuthor bs of
+         (comAuthor, rest)
+           | targetAuthor `L.isPrefixOf` comAuthor ->
+             pure . Just $ Commit (extractMessage rest) fp
+           | otherwise -> pure Nothing
+      | otherwise = pure Nothing
+
+filterGitObjType :: PhoenixM m => L.ByteString -> FilePath -> m (Maybe ())
+filterGitObjType goType fp = withCompressed fp go
+  where
+    go bs
+      | goType `L.isPrefixOf` bs = pure $ Just ()
+      | otherwise = pure Nothing
+
+withHandle :: PhoenixM m => FilePath -> (Handle -> m a) -> m a
+withHandle fp a = do
   s <- asks inHandlesSem
   U.bracket_ (U.waitQSem s) (U.signalQSem s) $
-    U.withBinaryFile fp U.ReadMode $ \inH -> liftIO $ do
-     magicBs <- BS.hGet inH 2
-     if zlibP magicBs
-       then do
-         !headerBs <- (magicBs <>) <$> BS.hGet inH 32
-         if gitObjectP $ Z.decompress (toLazy headerBs)
-           then do
-             !goh <- sha1 . Z.decompress . (toLazy headerBs <>) <$> L.hGetContents inH
-             pure . Just $ GitObject goh fp
-           else pure Nothing
-       else pure Nothing
+    U.withBinaryFile fp U.ReadMode a
+
+withCompressed :: PhoenixM m => FilePath -> (L.ByteString -> m a) -> m a
+withCompressed fp a =
+  withHandle fp $ \inH -> hGetContents inH >>= a . Z.decompress
+
+hGet :: MonadIO m => Handle -> Int -> m BS.ByteString
+hGet h n = liftIO $ BS.hGet h n
+
+hGetContents :: MonadIO m => Handle -> m L.ByteString
+hGetContents h = liftIO $ L.hGetContents h
+
+mkGitObject :: PhoenixM m => FilePath -> m (Maybe GitObject)
+mkGitObject fp =
+  withHandle fp $ \inH -> do
+    magicBs <- hGet inH 2
+    if zlibP magicBs
+      then (`U.catch` skipCorruptedFile) $ do
+        !headerBs <- (magicBs <>) <$> hGet inH 32
+        if gitObjectP $ Z.decompress (toLazy headerBs)
+          then do
+            !goh <- sha1 . Z.decompress . (toLazy headerBs <>) <$> hGetContents inH
+            pure . Just $ GitObject goh fp
+          else pure Nothing
+      else pure Nothing
   where
+    skipCorruptedFile (_ :: Z.DecompressError) = do
+      -- putStrLn $ "Skip corrupted file: " <> fp
+      pure Nothing
+
     zlibNoCompression = "\x0078\x0001"
     zlibDefaultCompression = "\x0078\x009C"
     zlibBestCompression = "\x0078\x00DA"
