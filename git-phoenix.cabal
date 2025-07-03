@@ -46,16 +46,34 @@ library
   hs-source-dirs: src
   exposed-modules:
     Data.Git.Phoenix
+    Data.Git.Phoenix.App
     Data.Git.Phoenix.CmdArgs
+    Data.Git.Phoenix.Commit
+    Data.Git.Phoenix.CommitGraph
+    Data.Git.Phoenix.CommitSearch
+    Data.Git.Phoenix.Extraction
+    Data.Git.Phoenix.Io
+    Data.Git.Phoenix.Object
+    Data.Git.Phoenix.Repo
+    Data.Git.Phoenix.Sha
+    Data.Git.Phoenix.ShaCollision
+    Data.Git.Phoenix.Tree
+    Data.Git.Phoenix.Uber
   build-depends:
-      conduit                 < 2
+    , base                    < 5
+    , binary                  < 1
+    , conduit                 < 2
     , containers              < 1
+    , deepseq                 < 2
+    , file-io                 < 1
     , filepath                < 2
-    , SHA                     < 2
-    , zlib                    < 1
+    , memory                  < 1
     , pretty-hex              < 2
+    , SHA                     < 2
+    , regex-tdfa              < 2
     , time                    < 2
-    , trace-embrace           >= 1.2.0 && < 2
+    , word8                   < 1
+    , zlib                    < 1
 
 executable git-phoenix
   import: base
