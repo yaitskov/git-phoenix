@@ -9,6 +9,16 @@
         "url": "https://github.com/NixOS/nixpkgs/archive/da5af46a09eeb2b1c8f4193d626727d5b7460601.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "SHA": {
+        "branch": "master",
+        "owner": "yaitskov",
+        "repo": "SHA",
+        "rev": "86c2b753eed7d5aa310d80fb60d63f7419e38bbb",
+        "sha256": "sha256:1kajdql38rjr08acjfwhl3gy4ny80a5rbpx1ak2nsvv5v5dl6vzy",
+        "type": "tarball",
+        "url": "https://github.com/yaitskov/SHA/archive/86c2b753eed7d5aa310d80fb60d63f7419e38bbb.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "upload-doc-to-hackage": {
         "sha256": "0r1q21dngyalrm0ad204y470wr3s89mssbw9qi195hpgbp8qs8d2",
         "type": "tarball",
