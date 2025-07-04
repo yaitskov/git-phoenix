@@ -67,8 +67,10 @@ library
     , conduit                 < 2
     , containers              < 1
     , deepseq                 < 2
+    , extra                   < 2
     , file-io                 < 1
     , filepath                < 2
+    , lens                    < 6
     , memory                  < 1
     , pretty-hex              < 2
     , SHA                     < 2

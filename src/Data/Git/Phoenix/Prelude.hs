@@ -18,6 +18,7 @@ import Data.List as X ((!?))
 import Data.Tagged as X (Tagged (..), untag)
 import Relude as X
 import System.FilePath as X ((</>), dropFileName)
+import System.Time.Extra as X
 import Text.Printf as X
 import UnliftIO.IO as X (withBinaryFile, hIsOpen, hClose)
 import UnliftIO.QSem as X (QSem, signalQSem, waitQSem)

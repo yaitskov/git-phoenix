@@ -1,6 +1,7 @@
 -- | Collect links to GIT objects under 1 directory
 module Data.Git.Phoenix.Uber where
 
+import Control.Lens ((%~), _2)
 import Data.Binary qualified as B
 import Data.ByteString.Lazy qualified as L
 import Data.ByteString.Lazy.Char8 qualified as L8
@@ -33,16 +34,13 @@ mkGitObject fp =
     magicBs <- hGet inH 2
     if zlibP magicBs
       then do
-        !headerBs <- (magicBs <>) <$> hGet inH 16000 -- 510
         (`catch` skipCorruptedFile) $ do
-          if gitObjectP $ decompress (toLazy headerBs)
+          headerBs <- (toLazy magicBs <>) . toLazy <$> hGet inH 510
+          if gitObjectP $ decompress headerBs
             then do
-              !goh <- sha1 . decompress . (toLazy headerBs <>) <$> hGetContents inH
-              pure . Just $ GitObject goh fp
+              !goh <- sha1 . decompress . (headerBs <>) <$> hGetContents inH
+              pure . Just $! GitObject goh fp
             else
-              -- do
-              -- hSeek inH Absolute 2
-              -- !headerBs <- (magicBs <>) <$> hGet inH 510
               pure Nothing
       else pure Nothing
   where
@@ -96,7 +94,7 @@ storeGitObject (dedupMap, !countDown, !mapSize) gob = do
     putStrLn $ "GIT objects found: " <> show mapSize
   -- todo: dynamic init countDown value to keep print period ~ a few seconds
   -- usb stick is slow, but SSD is fast
-  (,if countDown <= 0 then 1000 else countDown - 1, mapSize + 1)
+  (,if countDown <= 0 then 10000 else countDown - 1, mapSize + 1)
     <$> (alrr writeGitObject $ M.insertLookupWithKey (\_h -> (+)) (gobHash gob) 1 dedupMap)
   where
    gobPath = gitObjectFilePath gob
@@ -117,18 +115,21 @@ storeGitObject (dedupMap, !countDown, !mapSize) gob = do
 
 recoverFrom :: PhoenixUberM m => Tagged InDir FilePath -> m ()
 recoverFrom (Tagged photorecOutDir) =
-  makeAbsolute photorecOutDir >>= go >>= reportCollisions
+  duration (makeAbsolute photorecOutDir >>= go) >>= reportCollisions
   where
     go absInDir =
-      M.elems . (\(m, _, _) -> m) <$>
+      (_2 %~ M.elems) . (\(m, _, objectsStored) -> (objectsStored, m)) <$>
         runConduitRes
           (  findGitObjects absInDir
           .| foldMC storeGitObject (mempty, 10, 0)
           )
     reportCollisions = \case
-      [] ->
+      (_, (_, [])) ->
         putStrLn $ "Dir [" <> photorecOutDir <> "] doesn't have Git files"
-      x ->
-        case I.maximum x of
+      (durSecs, (objectStored, collisions)) -> do
+        putStrLn . printf "Duration: %s" $ showDuration durSecs
+        putStrLn . printf "Found:    %d" $ objectStored
+        putStrLn . printf "Speed:    %.2f files per second" $ fromIntegral objectStored / durSecs
+        case I.maximum collisions of
           1 -> pure ()
           cn -> putStrLn $ "Maximum number of SHA collisions: " <> show cn
