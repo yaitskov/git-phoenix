@@ -20,4 +20,21 @@ in hfinal: hprev:
       }
     ])) // {
       "upload-doc-to-hackage" = hfinal.callPackage sources.upload-doc-to-hackage {};
+      "th-lock" = hfinal.callHackageDirect
+        { pkg = "th-lock";
+          ver = "0.0.4";
+          sha256 = "sha256-chFv77J0oWLzf4zAX4Awv7uhQEhiPegvPgrLWNaEuhs=";
+        } {};
+
+      "haddock-use-refs" = hfinal.callHackageDirect
+        { pkg = "haddock-use-refs";
+          ver = "1.0.1";
+          sha256 = "sha256-fxrfMQ4CUthzNwYVjwV5kJmmPgimVpbnVhxnoYi1GrE=";
+        } {};
+
+      "trace-embrace" = hfinal.callHackageDirect
+        { pkg = "trace-embrace";
+          ver = "1.2.0";
+          sha256 = "sha256-O3865lJryaDfDM4NQVHNu45DI/vNxofY4/+RVcnJlPg=";
+        } {};
     }

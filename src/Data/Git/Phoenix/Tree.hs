@@ -1,19 +1,14 @@
 module Data.Git.Phoenix.Tree where
 
-import Codec.Compression.Zlib qualified as Z
 import Data.ByteString.Lazy qualified as L
 import Data.Git.Phoenix.App
 import Data.Git.Phoenix.Object
+import Data.Git.Phoenix.Prelude
 import Data.Git.Phoenix.Sha
 import Data.Git.Phoenix.ShaCollision
-import Data.Tagged (Tagged (..))
 import Data.Git.Phoenix.Io
-import Relude
-import System.FilePath ((</>))
-import UnliftIO.IO qualified as U
 
-
-dropTreeHeader :: L.ByteString -> L.ByteString
+dropTreeHeader :: LByteString -> LByteString
 dropTreeHeader = L.drop 1 . L.dropWhile (/= 0)
 
 data DOF = Dir | File deriving (Eq, Show, Generic)
@@ -26,22 +21,22 @@ dofToGitObjType =
     Dir -> TreeType
     File -> BlobType
 
-readTreeShas :: L.ByteString -> [(DOF, L.ByteString)]
+readTreeShas :: LByteString -> [(DOF, LByteString)]
 readTreeShas modePrefixedBs =
   case L.uncons modePrefixedBs of
     Just (0x31, bs) -> go File bs {- '1' blob  -}
     Just (0x34, bs) -> go Dir bs  {- '4' tree  -}
     Nothing -> []
-    _ ->
+    Just (ue, _) ->
       error $ "tree entry mode does not start with 1 nor 4: "
-        <> show modePrefixedBs
+        <> show ue <> "\n" <> show modePrefixedBs
   where
     shaBinLen = 20
     go dof bs =
       case L.uncons $ L.dropWhile (/= 0) bs  of
         Just (0, shaPrefixedBs) ->
           let (sha, bs') = L.splitAt shaBinLen shaPrefixedBs in
-            (dof, sha) : (readTreeShas $ L.dropWhile (/= 0) bs')
+            (dof, sha) : readTreeShas bs'
         Just (nz, _) ->
           error $ "expected zero byte but got " <> show nz <> " in "
             <> show modePrefixedBs
@@ -50,9 +45,9 @@ readTreeShas modePrefixedBs =
 
 parseTreeObject :: PhoenixExtractM m =>
   GitPath Tree ->
-  Tagged Compressed L.ByteString ->
-  L.ByteString ->
-  m [(DOF, L.ByteString)]
+  Tagged Compressed LByteString ->
+  LByteString ->
+  m [(DOF, LByteString)]
 parseTreeObject gop cbs bs =
   case classifyGitObject bs of
     Just BlobType -> fail $ show gop <> " is Git blob but expected Git tree"
@@ -62,20 +57,23 @@ parseTreeObject gop cbs bs =
     Nothing -> fail $ show gop <> " is not a Git tree object"
 
 -- | just 'copyFile' is not possible due to trash after archive
-saveCompressedBs :: PhoenixM m => FilePath -> L.ByteString -> m ()
-saveCompressedBs fp bs =
-  U.withBinaryFile fp U.WriteMode $ \h -> hPut h $ Z.compress bs
+saveCompressedBs :: PhoenixM m => FilePath -> LByteString -> m ()
+saveCompressedBs fp bs = do
+  createDirectoryIfMissing False $ dropFileName fp
+  withBinaryFile ($(tr "/fp") fp) WriteMode $ \h -> hPut h $ compress bs
 
 extractTree :: PhoenixExtractM m => GitPath Tree -> m ()
 extractTree treeHash = do
   Tagged udr <- asks uberDir
   dd <- getDestDir
+  putStrLn $ " udr </> toFp treeHash: " <> (udr </> toFp treeHash) <> " ; dd = " <> dd
   withCompressedH (udr </> toFp treeHash) (copyTree treeHash) >>=
     mapM_ (copyTreeLinks dd)
   where
     copyTree trHash cTreeBs treeBs = do
       shas <- parseTreeObject trHash cTreeBs treeBs
       destDir <- getDestDir
+      putStrLn $ " saveCompressedBs " <> (destDir </> toFp trHash)
       saveCompressedBs (destDir </> toFp trHash) treeBs
       pure shas
     getDestDir = (\(Tagged r) -> r </> ".git" </> "objects") <$> asks destGitDir

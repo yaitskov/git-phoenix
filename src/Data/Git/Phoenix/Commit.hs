@@ -15,7 +15,7 @@ extractField b field parseValue bs =
     "" -> ("", "")
     bs' ->
       if field `L.isPrefixOf` bs'
-      then parseValue $ L.drop (2 + L.length field) bs'
+      then parseValue $ L.drop (L.length field) bs'
       else extractField b field parseValue $ L.drop 1 bs'
 
 extractParent :: L.ByteString -> (L.ByteString, L.ByteString)

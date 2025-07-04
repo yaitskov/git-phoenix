@@ -6,10 +6,7 @@ import Data.ByteString.Lazy.Char8 qualified as L8
 import Data.Git.Phoenix.App
 import Data.Git.Phoenix.Io
 import Data.Git.Phoenix.Object
-import Data.List ((!?))
-import Data.Tagged (Tagged (..))
-import Relude
-import Text.Printf
+import Data.Git.Phoenix.Prelude
 
       -- read list of colliding files filter out non tree objects
       -- dedup left by pair
@@ -21,10 +18,10 @@ import Text.Printf
 
 uniqBs :: PhoenixExtractM m =>
   GitPath x ->
-  Tagged Compressed L.ByteString ->
+  Tagged Compressed LByteString ->
   GitObjType ->
-  m L.ByteString
-uniqBs ambiHash (Tagged preCbs) _expectedGitObjType = do
+  m LByteString
+uniqBs ambiHash (Tagged preCbs) expectedGitObjType = do
   case parseFileLinks cbs of
     [_] -> fail $ show cbs <> " is not ambiguous"
     [] -> fail $ show cbs <> " is emply list"
@@ -33,8 +30,8 @@ uniqBs ambiHash (Tagged preCbs) _expectedGitObjType = do
     chooseOneLink links = do
       forM_ (zip [0 :: Int ..] links) $ \(i, l) -> putStrLn $ printf "%4d) %s" i l
       putStrLn "-----------------------------------------------------------"
-      putStrLn $ "Enter link number to disambiguate SHA " <> toFp ambiHash
-      i <- readNumber 0 (length links - 1)
+      putStrLn $ "Enter link number to disambiguate SHA " <> toFp ambiHash <> " of " <> show expectedGitObjType
+      i <- pure $ length links - 1  -- readNumber 0 (length links - 1)
       case links !? i of
         Nothing -> fail $ "Link index out of range: " <> show i <> " for " <> show (length links)
         Just l -> withCompressed l pure

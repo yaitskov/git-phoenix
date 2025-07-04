@@ -31,6 +31,7 @@ common base
     MultilineStrings
     NoImplicitPrelude
     OverloadedStrings
+    TemplateHaskell
   build-depends:
       base >=4.7 && < 5
     , bytestring >= 0.12.1 && < 1
@@ -53,6 +54,7 @@ library
     Data.Git.Phoenix.Extraction
     Data.Git.Phoenix.Io
     Data.Git.Phoenix.Object
+    Data.Git.Phoenix.Prelude
     Data.Git.Phoenix.Repo
     Data.Git.Phoenix.Sha
     Data.Git.Phoenix.ShaCollision
@@ -70,7 +72,9 @@ library
     , pretty-hex              < 2
     , SHA                     < 2
     , regex-tdfa              < 2
+    , template-haskell        < 3
     , time                    < 2
+    , trace-embrace           >= 1.2.0 && < 2
     , word8                   < 1
     , zlib                    < 1
 

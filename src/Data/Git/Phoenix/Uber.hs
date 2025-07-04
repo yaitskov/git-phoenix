@@ -1,26 +1,17 @@
 -- | Collect links to GIT objects under 1 directory
 module Data.Git.Phoenix.Uber where
 
-import Codec.Compression.Zlib qualified as Z
-import Control.DeepSeq
-import Conduit (MonadUnliftIO, ConduitT, foldMC, mapMC, concatC, sourceDirectoryDeep)
 import Data.Binary qualified as B
 import Data.ByteString.Lazy qualified as L
 import Data.ByteString.Lazy.Char8 qualified as L8
-import Data.Conduit (runConduitRes, (.|))
 import Data.Git.Phoenix.App
 import Data.Git.Phoenix.CmdArgs (InDir)
 import Data.Git.Phoenix.Io
 import Data.Git.Phoenix.Object
+import Data.Git.Phoenix.Prelude
 import Data.Git.Phoenix.Sha
 import Data.List qualified as I
 import Data.Map.Strict qualified as M
-import Data.Tagged (Tagged (..), untag)
-import Relude
-import System.FilePath ((</>), dropFileName)
-import UnliftIO.Exception qualified as U
-import UnliftIO.Directory qualified as U
-import UnliftIO.IO qualified as U
 
 type ShaDedupMap = M.Map ComHash Int
 
@@ -42,17 +33,21 @@ mkGitObject fp =
     magicBs <- hGet inH 2
     if zlibP magicBs
       then do
-        !headerBs <- (magicBs <>) <$> hGet inH 10
-        (`U.catch` skipCorruptedFile) $ do
-          if gitObjectP $ Z.decompress (toLazy headerBs)
+        !headerBs <- (magicBs <>) <$> hGet inH 16000 -- 510
+        (`catch` skipCorruptedFile) $ do
+          if gitObjectP $ decompress (toLazy headerBs)
             then do
-              !goh <- sha1 . Z.decompress . (toLazy headerBs <>) <$> hGetContents inH
+              !goh <- sha1 . decompress . (toLazy headerBs <>) <$> hGetContents inH
               pure . Just $ GitObject goh fp
-            else pure Nothing
+            else
+              -- do
+              -- hSeek inH Absolute 2
+              -- !headerBs <- (magicBs <>) <$> hGet inH 510
+              pure Nothing
       else pure Nothing
   where
-    skipCorruptedFile (_ :: Z.DecompressError) = do
-      putStrLn $ "Skip corrupted file: " <> fp
+    skipCorruptedFile (_ :: DecompressError) = do
+      liftIO $ $(trIo "Skip corrupted file/fp")
       pure Nothing
 
     zlibNoCompression = "\x0078\x0001"
@@ -75,9 +70,9 @@ alrr f (a, !r) = f a >> pure r
 
 replaceSymLinkWithDisambiguate :: MonadUnliftIO m => FilePath -> GitObject -> m ()
 replaceSymLinkWithDisambiguate uberGob gob = do
-  firstGobOrigin <- L8.pack <$> U.getSymbolicLinkTarget uberGob
-  U.removeFile uberGob
-  U.withBinaryFile uberGob U.WriteMode $ \oh ->
+  firstGobOrigin <- L8.pack <$> getSymbolicLinkTarget uberGob
+  removeFile uberGob
+  withBinaryFile uberGob WriteMode $ \oh ->
     hPut oh . mconcat $ [ compressedDisambiguate
                         , B.encode $ L.length firstGobOrigin
                         , firstGobOrigin
@@ -89,7 +84,7 @@ replaceSymLinkWithDisambiguate uberGob gob = do
 
 appendPathToUberGob :: MonadUnliftIO m => FilePath -> GitObject -> m ()
 appendPathToUberGob uberGob gob =
-  U.withBinaryFile uberGob U.AppendMode $ \oh ->
+  withBinaryFile uberGob AppendMode $ \oh ->
     hPut oh $ gobLen <> gobPacked
   where
     gobPacked = L8.pack $ gobOrigin gob
@@ -108,12 +103,13 @@ storeGitObject (dedupMap, !countDown, !mapSize) gob = do
    writeGitObject = \case
      Nothing -> do
        dod <- asks $ untag . destObjectDir
-       U.createDirectoryIfMissing False (dod </> dropFileName gobPath)
-       U.createFileLink (gobOrigin gob) (dod </> gobPath)
+       createDirectoryIfMissing False (dod </> dropFileName gobPath)
+       createFileLink (gobOrigin gob) (dod </> gobPath)
      Just _dedupSuffix -> do
        dod <- asks $ untag . destObjectDir
        let uberGob = dod </> gobPath
-       U.pathIsSymbolicLink (gobOrigin gob) >>= \case
+       -- putStrLn $ "dedupSuffix " <> show dedupSuffix <> "; uberGob " <> show uberGob <> "; origob " <> show (gobOrigin gob)
+       pathIsSymbolicLink uberGob >>= \case
          True ->
            replaceSymLinkWithDisambiguate uberGob gob
          False ->
@@ -121,7 +117,7 @@ storeGitObject (dedupMap, !countDown, !mapSize) gob = do
 
 recoverFrom :: PhoenixUberM m => Tagged InDir FilePath -> m ()
 recoverFrom (Tagged photorecOutDir) =
-  U.makeAbsolute photorecOutDir >>= go >>= reportCollisions
+  makeAbsolute photorecOutDir >>= go >>= reportCollisions
   where
     go absInDir =
       M.elems . (\(m, _, _) -> m) <$>

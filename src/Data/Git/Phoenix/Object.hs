@@ -1,9 +1,8 @@
 module Data.Git.Phoenix.Object where
 
-import Codec.Compression.Zlib qualified as Z
 import Data.Binary qualified as B
 import Data.ByteString.Lazy qualified as L
-import Relude
+import Data.Git.Phoenix.Prelude
 
 data GitObjType = CommitType | TreeType | BlobType | CollidedHash deriving (Show, Eq)
 
@@ -12,7 +11,7 @@ data GitObjTypeG = Commit | Tree deriving (Show, Eq)
 -- | Path relative to .git/objects or uber dir
 newtype GitPath (t :: GitObjTypeG) = GitPath { toFp :: FilePath } deriving (Show, Eq, NFData)
 
-classifyGitObject :: L.ByteString -> Maybe GitObjType
+classifyGitObject :: LByteString -> Maybe GitObjType
 classifyGitObject bs
   | blob `L.isPrefixOf` bs = pure BlobType
   | tree `L.isPrefixOf` bs = pure TreeType
@@ -26,7 +25,7 @@ commit = "commit "
 blob = "blob "
 tree = "tree "
 
-gitObjectP :: L.ByteString -> Bool
+gitObjectP :: LByteString -> Bool
 gitObjectP bs =
   case classifyGitObject bs of
     Nothing -> False
@@ -35,8 +34,8 @@ gitObjectP bs =
 
 compressedDisambiguate :: L.ByteString
 compressedDisambiguate =
-  Z.compressWith
-    (Z.defaultCompressParams { Z.compressLevel = Z.CompressionLevel 0 })
+  compressWith
+    (defaultCompressParams { compressLevel = CompressionLevel 0 })
     disambiguate
 
 encodedIntLen :: Int64

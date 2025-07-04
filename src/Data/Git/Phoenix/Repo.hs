@@ -7,7 +7,7 @@ import System.FilePath
 initGitRepo :: MonadIO m => FilePath -> m ()
 initGitRepo rp = liftIO $ do
   mapM_ createDirectory $ rp : rpGit : rpGitDirs
-  mapM_ (\(fn, fc) -> writeFile (rp </> fn) fc)
+  mapM_ (\(fn, fc) -> writeFile (rpGit </> fn) fc)
         [ ("HEAD", "ref: refs/heads/master")
         , ( "description"
           , "Unnamed repository; edit this file 'description' to name the repository."
@@ -21,5 +21,5 @@ initGitRepo rp = liftIO $ do
     rpGit = rp </> ".git"
     rpGitDirs =
       fmap (rpGit </>) $  ["branches", "hooks", "info"]
-                       <> fmap ("objects" </>) ["info", "pack"]
-                       <> fmap ("refs" </>) ["heads", "tags"]
+                       <> fmap ("objects" </>) ["", "info", "pack"]
+                       <> fmap ("refs" </>) ["", "heads", "tags"]

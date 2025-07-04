@@ -8,7 +8,7 @@ import Data.Tagged (Tagged)
 import Relude
 import UnliftIO.QSem qualified as U
 
-type PhoenixM m = (MonadUnliftIO m, MonadFail m, HasInHandlesSem m)
+type PhoenixM m = (HasCallStack, MonadUnliftIO m, MonadFail m, HasInHandlesSem m)
 
 data PhoenixUberConf
   = PhoenixUberConf

@@ -4,6 +4,8 @@ mode:
   sink:
     tag: StdErrSink
   tag: TraceUnsafeIo  #  tag: Trace
+# mode:
+#   tag: TraceStd
 runtimeLevelsOverrideEnvVar:
   tag: CapsPackageName
 traceMessage:

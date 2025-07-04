@@ -1,33 +1,25 @@
 module Data.Git.Phoenix.Io where
 
-import Conduit
-import Codec.Compression.Zlib qualified as Z
-import Control.DeepSeq
 import Data.ByteString.Lazy qualified as L
 import Data.ByteString qualified as BS
-import Data.Tagged (Tagged (..))
-import Relude
+import Data.Git.Phoenix.Prelude
 import System.IO (openBinaryFile)
-import UnliftIO.Exception qualified as U
-import UnliftIO.IO qualified as U
-import UnliftIO.QSem qualified as U
 
 class HasInHandlesSem m where
-  getInHandlesSem :: m U.QSem
-
+  getInHandlesSem :: m QSem
 
 instance (Monad m, HasInHandlesSem m) => HasInHandlesSem (ResourceT m) where
   getInHandlesSem = lift getInHandlesSem
 
 withHandleX :: (NFData a, MonadUnliftIO m, HasInHandlesSem m) =>
-  U.IOMode -> FilePath -> (Handle -> m a) -> m a
+  IOMode -> FilePath -> (Handle -> m a) -> m a
 withHandleX mode fp a = do
   s <- getInHandlesSem
-  U.bracket_ (U.waitQSem s) (U.signalQSem s) $
+  bracket_ (waitQSem s) (signalQSem s) $
     -- withFile is not applicable because Handle might be closed twice
     -- https://github.com/haskell/bytestring/issues/707
-    U.bracket (liftIO $ openBinaryFile fp mode)
-      (\h -> whenM (U.hIsOpen h) $ U.hClose h) go
+    bracket (liftIO $ openBinaryFile fp mode)
+      (\h -> whenM (hIsOpen h) $ hClose h) go
   where
     go h = do
       !r <- a h
@@ -35,28 +27,28 @@ withHandleX mode fp a = do
 
 withHandle :: (NFData a, MonadUnliftIO m, HasInHandlesSem m) =>
   FilePath -> (Handle -> m a) -> m a
-withHandle = withHandleX U.ReadMode
+withHandle = withHandleX ReadMode
 
 data Compressed
 
 withCompressedH :: (NFData a, MonadUnliftIO m, HasInHandlesSem m) =>
   FilePath ->
-  (Tagged Compressed L.ByteString -> L.ByteString -> m a) ->
+  (Tagged Compressed LByteString -> LByteString -> m a) ->
   m a
 withCompressedH fp a =
-  withHandle fp $ \inH -> hGetContents inH >>= (\cbs -> a (Tagged cbs) $ Z.decompress cbs)
+  withHandle ($(tr "!/fp") fp) $ \inH -> hGetContents inH >>= (\cbs -> a (Tagged cbs) $ decompress cbs)
 
-withCompressed :: (NFData a, MonadUnliftIO m, HasInHandlesSem m) =>
-  FilePath -> (L.ByteString -> m a) -> m a
+withCompressed :: (HasCallStack, NFData a, MonadUnliftIO m, HasInHandlesSem m) =>
+  FilePath -> (HasCallStack => L.ByteString -> m a) -> m a
 withCompressed fp a = withCompressedH fp (\_cbs bs -> a bs)
 
-hGet :: MonadIO m => Handle -> Int -> m BS.ByteString
+hGet :: MonadIO m => Handle -> Int -> m ByteString
 hGet h n = liftIO $ BS.hGet h n
 
-hGetContents :: MonadIO m => Handle -> m L.ByteString
+hGetContents :: MonadIO m => Handle -> m LByteString
 hGetContents h = liftIO $ L.hGetContents h
 
-hPut :: MonadIO m => Handle -> L.ByteString -> m ()
+hPut :: MonadIO m => Handle -> LByteString -> m ()
 hPut h bs = liftIO $ L.hPut h bs
 
 readNumber :: MonadIO m => Int -> Int -> m Int
