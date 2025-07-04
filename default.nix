@@ -36,8 +36,8 @@ let
       hsOverlays;
   });
 
-  # hls = pkgs.haskell.lib.overrideCabal hsPkgs.haskell-language-server
-  #    (_: { enableSharedExecutables = true; });
+  hls = pkgs.haskell.lib.overrideCabal hsPkgs.haskell-language-server
+     (_: { enableSharedExecutables = true; });
 
   shell = hsPkgs.shellFor {
     packages = p: [ p.git-phoenix ];
@@ -48,8 +48,7 @@ let
       niv
       pandoc
       git
-    ]);
-    ## ++ [ hls hsPkgs.upload-doc-to-hackage ];
+    ]) ++ [ hls hsPkgs.upload-doc-to-hackage ];
     shellHook = ''
       export PS1='$ '
       echo $(dirname $(dirname $(which ghc)))/share/doc > .haddock-ref
