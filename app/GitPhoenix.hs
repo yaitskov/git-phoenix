@@ -3,7 +3,6 @@ module Main where
 import Control.Concurrent qualified as C
 import Data.Git.Phoenix.App
 import Data.Git.Phoenix.CmdArgs
--- import Data.Git.Phoenix.CommitSearch
 import Data.Git.Phoenix.Extraction
 import Data.Git.Phoenix.Uber
 import Data.Tagged (untag)

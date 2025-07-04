@@ -16,7 +16,7 @@ readCommitObject :: PhoenixExtractM m => GitPath Commit -> m (Maybe (GitPath Com
 readCommitObject gop = (`withCompressedH` go) . (</> toFp gop) . untag =<< asks uberDir
   where
     goCommit bs =
-      case extractTreeHash $ $(tr "!eee/bs") bs of
+      case extractTreeHash $ $(tr "eee/bs") bs of
         ("", _) -> fail $ show gop <> " does not have tree field"
         (treeComit, bs') -> do
           gitDir <- untag <$> asks destGitDir
@@ -43,7 +43,7 @@ readCommitObject gop = (`withCompressedH` go) . (</> toFp gop) . untag =<< asks 
 extractCommit :: PhoenixExtractM m => GitPath Commit -> m ()
 extractCommit ohp = do
   (mParHash, treeHash) <- readCommitObject ohp
-  extractTree $ $(tw "!/") treeHash
+  extractTree $ $(tw "/") treeHash
   mapM_ extractCommit mParHash
 
 extractCommitChainAsRepo :: PhoenixExtractM m => Tagged ShaPrefix String -> m ()

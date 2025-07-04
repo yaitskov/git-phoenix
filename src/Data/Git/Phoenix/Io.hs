@@ -36,7 +36,7 @@ withCompressedH :: (NFData a, MonadUnliftIO m, HasInHandlesSem m) =>
   (Tagged Compressed LByteString -> LByteString -> m a) ->
   m a
 withCompressedH fp a =
-  withHandle ($(tr "!/fp") fp) $ \inH -> hGetContents inH >>= (\cbs -> a (Tagged cbs) $ decompress cbs)
+  withHandle ($(tr "/fp") fp) $ \inH -> hGetContents inH >>= (\cbs -> a (Tagged cbs) $ decompress cbs)
 
 withCompressed :: (HasCallStack, NFData a, MonadUnliftIO m, HasInHandlesSem m) =>
   FilePath -> (HasCallStack => L.ByteString -> m a) -> m a
