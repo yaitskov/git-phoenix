@@ -1,5 +1,6 @@
 module Data.Git.Phoenix.ShaCollision where
 
+import Data.List.NonEmpty (groupWith)
 import Data.Binary qualified as B
 import Data.ByteString.Lazy qualified as L
 import Data.ByteString.Lazy.Char8 qualified as L8
@@ -16,6 +17,25 @@ import Data.Git.Phoenix.Prelude
       -- remember choice if not random
       -- do readCommitObject recursively
 
+disambiguateByPair :: PhoenixExtractM m => GitObjType -> [FilePath] -> m [FilePath]
+disambiguateByPair tt links =
+  fmap (snd . head) . groupWith fst . sort . catMaybes <$> mapM go links
+  where
+    go l = do
+      withCompressed l $ \bs -> do
+        case classifyGitObject bs of
+          Just x | x == tt -> pure $ Just (bs, l)
+                 | otherwise -> pure Nothing
+          Nothing -> pure Nothing
+
+  --   go headBs headLink = do
+  -- case links of
+  --   [a] -> pure [a]
+  --   [] -> pure []
+  --   h1 : h2 : links' ->
+  --     cmpCompressed
+
+
 uniqBs :: PhoenixExtractM m =>
   GitPath x ->
   Tagged Compressed LByteString ->
@@ -25,13 +45,22 @@ uniqBs ambiHash (Tagged preCbs) expectedGitObjType = do
   case parseFileLinks cbs of
     [_] -> fail $ show cbs <> " is not ambiguous"
     [] -> fail $ show cbs <> " is emply list"
-    links -> chooseOneLink $ fmap L8.unpack links
+    links -> do
+      disLinks <- disambiguateByPair expectedGitObjType $ fmap L8.unpack links
+      case disLinks of
+        [] -> fail $ show cbs <> " is emply list after dis"
+        [a] -> do
+          putStrLn $ "Filtered links " <> show (length links - 1)
+          withCompressed a pure
+        uniqLinks -> do
+          putStrLn $ "Filtered links " <> show (length links - length uniqLinks)
+          chooseOneLink uniqLinks
   where
     chooseOneLink links = do
       forM_ (zip [0 :: Int ..] links) $ \(i, l) -> putStrLn $ printf "%4d) %s" i l
       putStrLn "-----------------------------------------------------------"
       putStrLn $ "Enter link number to disambiguate SHA " <> toFp ambiHash <> " of " <> show expectedGitObjType
-      i <- pure $ length links - 1  -- readNumber 0 (length links - 1)
+      i <- readNumber 0 (length links - 1) -- pure $ length links - 1  --
       case links !? i of
         Nothing -> fail $ "Link index out of range: " <> show i <> " for " <> show (length links)
         Just l -> withCompressed l pure

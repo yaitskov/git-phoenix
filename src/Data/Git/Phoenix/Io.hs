@@ -51,6 +51,12 @@ hGetContents h = liftIO $ L.hGetContents h
 hPut :: MonadIO m => Handle -> LByteString -> m ()
 hPut h bs = liftIO $ L.hPut h bs
 
+-- | just 'copyFile' is not possible due to trash after archive
+saveCompressedBs :: MonadUnliftIO m => FilePath -> LByteString -> m ()
+saveCompressedBs fp bs = do
+  createDirectoryIfMissing False $ dropFileName fp
+  withBinaryFile ($(tr "/fp") fp) WriteMode $ \h -> hPut h $ compress bs
+
 readNumber :: MonadIO m => Int -> Int -> m Int
 readNumber minVal maxVal = go
   where

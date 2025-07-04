@@ -56,12 +56,6 @@ parseTreeObject gop cbs bs =
     Just CollidedHash -> readTreeShas . dropTreeHeader <$> uniqBs gop cbs TreeType
     Nothing -> fail $ show gop <> " is not a Git tree object"
 
--- | just 'copyFile' is not possible due to trash after archive
-saveCompressedBs :: PhoenixM m => FilePath -> LByteString -> m ()
-saveCompressedBs fp bs = do
-  createDirectoryIfMissing False $ dropFileName fp
-  withBinaryFile ($(tr "/fp") fp) WriteMode $ \h -> hPut h $ compress bs
-
 extractTree :: PhoenixExtractM m => GitPath Tree -> m ()
 extractTree treeHash = do
   Tagged udr <- asks uberDir

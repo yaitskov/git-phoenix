@@ -18,7 +18,11 @@ readCommitObject gop = (`withCompressedH` go) . (</> toFp gop) . untag =<< asks 
     goCommit bs =
       case extractTreeHash $ $(tr "!eee/bs") bs of
         ("", _) -> fail $ show gop <> " does not have tree field"
-        (treeComit, bs') ->
+        (treeComit, bs') -> do
+          gitDir <- untag <$> asks destGitDir
+          saveCompressedBs
+            (gitDir </> ".git" </> "objects" </> toFp gop)
+            bs
           case extractParent bs' of
             ("", _) -> pure (Nothing, shaToPath $ L8.unpack treeComit)
             (ph, _) -> pure ( Just . shaToPath $ L8.unpack ph
