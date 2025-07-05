@@ -81,6 +81,17 @@ library
     , word8                   < 1
     , zlib                    < 1
 
+test-suite test
+  import: base
+  type: exitcode-stdio-1.0
+  main-is: RunUberExtract.hs
+  other-modules:
+  hs-source-dirs:
+    test
+  ghc-options: -Wall -rtsopts -threaded -main-is RunUberExtract
+  build-depends:
+    git-phoenix, QuickCheck, unliftio
+
 executable git-phoenix
   import: base
   ghc-options: -Wall -threaded -with-rtsopts=-N
