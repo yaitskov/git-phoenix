@@ -48,6 +48,7 @@ library
     Data.Git.Phoenix
     Data.Git.Phoenix.App
     Data.Git.Phoenix.CmdArgs
+    Data.Git.Phoenix.CmdRun
     Data.Git.Phoenix.Commit
     Data.Git.Phoenix.CommitGraph
     Data.Git.Phoenix.CommitSearch

@@ -4,12 +4,10 @@ import Data.ByteString.Lazy qualified as L
 import Data.Word8 qualified as W
 import Relude
 
+type LbsPair = (LByteString, LByteString)
+
 extractField ::
-  Word8 ->
-  L.ByteString ->
-  (L.ByteString -> (L.ByteString, L.ByteString)) ->
-  L.ByteString ->
-  (L.ByteString, L.ByteString)
+  Word8 -> LByteString -> (LByteString -> LbsPair) -> LByteString -> LbsPair
 extractField b field parseValue bs =
   case L.dropWhile (/= b) bs of
     "" -> ("", "")
@@ -18,7 +16,7 @@ extractField b field parseValue bs =
       then parseValue $ L.drop (L.length field) bs'
       else extractField b field parseValue $ L.drop 1 bs'
 
-extractParent :: L.ByteString -> (L.ByteString, L.ByteString)
+extractParent :: L.ByteString -> LbsPair
 extractParent =
   extractField
     (fromIntegral $ ord '\n')
@@ -26,6 +24,6 @@ extractParent =
     (L.span W.isHexDigit)
 
 
-extractTreeHash :: L.ByteString -> (L.ByteString, L.ByteString)
+extractTreeHash :: L.ByteString -> LbsPair
 extractTreeHash =
   extractField 0 "\0tree " (L.span W.isHexDigit)

@@ -1,5 +1,6 @@
 module Data.Git.Phoenix.Prelude (module X) where
 
+import Control.Concurrent as X (getNumCapabilities)
 import Codec.Compression.Zlib as X
   ( CompressionLevel (..), DecompressError (..)
   , CompressParams (..), DecompressParams (..)
@@ -21,10 +22,10 @@ import System.FilePath as X ((</>), dropFileName)
 import System.Time.Extra as X
 import Text.Printf as X
 import UnliftIO.IO as X (withBinaryFile, hIsOpen, hClose)
-import UnliftIO.QSem as X (QSem, signalQSem, waitQSem)
+import UnliftIO.QSem as X (QSem, newQSem, signalQSem, waitQSem)
 import UnliftIO.Exception as X (bracket, bracket_, catch)
 import UnliftIO.Directory as X
   ( createFileLink, createDirectoryIfMissing
-  , pathIsSymbolicLink, makeAbsolute
-  , getSymbolicLinkTarget, removeFile
+  , pathIsSymbolicLink, makeAbsolute, createDirectory
+  , getSymbolicLinkTarget, removeFile, copyFile
   )
