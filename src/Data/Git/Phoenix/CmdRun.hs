@@ -13,7 +13,7 @@ runCmd = \case
     s <- newQSem =<< getNumCapabilities
     runReaderT (recoverFrom inDir) (PhoenixUberConf outDir s)
   ExtractCommitTreeAsGitRepo { rootCommit, uberRepoDir, gitRepoOut } -> do
-    s <- newQSem . $(tw "!numCapabilities/") . (*1) =<< getNumCapabilities
+    s <- newQSem . $(tw "numCapabilities/") =<< getNumCapabilities
 
     runReaderT
       (extractCommitChainAsRepo rootCommit)

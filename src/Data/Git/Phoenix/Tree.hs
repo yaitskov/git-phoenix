@@ -78,7 +78,6 @@ extractTree :: PhoenixExtractM m => GitPath Tree -> m ()
 extractTree treeHash = do
   Tagged udr <- asks uberDir
   dd <- getDestDir
-  -- putStrLn $ " udr </> toFp treeHash: " <> (udr </> toFp treeHash) <> " ; dd = " <> dd
   copyTree (udr </> toFp treeHash) treeHash >>=
     mapM_ (copyTreeLinks dd) . $(tw "len/")
   where
@@ -86,7 +85,7 @@ extractTree treeHash = do
       let save bs = do
             destDir <- getDestDir
             saveCompressedBs (destDir </> toFp trH) bs
-      !rl <- withCompressedH treePath $ \cTreeBs treeBs ->
+      rl <- withCompressedH treePath $ \cTreeBs treeBs ->
         parseTreeObject treePath cTreeBs treeBs >>= onRight_ (\_ -> save treeBs)
       shas <- case rl of
         Right shas' -> pure shas'
@@ -95,7 +94,7 @@ extractTree treeHash = do
           withCompressed uniPath
             (\ubs -> do
                 save ubs
-                pure . readTreeShas $! dropTreeHeader ubs
+                pure . readTreeShas $ dropTreeHeader ubs
             )
       pure shas
     getDestDir = (\(Tagged r) -> r </> ".git" </> "objects") <$> asks destGitDir
@@ -111,13 +110,13 @@ extractTree treeHash = do
       nonRec <- withCompressedH absSha $ \cbs bs ->
         case classifyGitObject bs of
           Just BlobType
-            | dof == File -> JustBlob <$!> saveBlob bs
+            | dof == File -> JustBlob <$> saveBlob bs
             | otherwise -> fail $ absSha <> " is not a GIT blob"
           Just TreeType
-            | dof == Dir -> TreeShas <$!> saveTree bs
+            | dof == Dir -> TreeShas <$> saveTree bs
             | otherwise -> fail $ absSha <> " is not a GIT tree"
           Just CollidedHash ->
-            pure $! Collision cbs
+            pure $ Collision cbs
           _ -> fail $ absSha <> " is not a GIT tree nor GIT blob nor disambiguate file"
       case nonRec of
         JustBlob () -> pure ()
@@ -127,8 +126,8 @@ extractTree treeHash = do
           uniPath <- uniqBs shaP cbs' (dofToGitObjType dof)
           !lr <- withCompressed uniPath $ \ubs ->
             case classifyGitObject ubs of
-              Just BlobType -> Left <$!> saveBlob ubs
-              Just TreeType -> Right <$!> saveTree ubs
+              Just BlobType -> Left <$> saveBlob ubs
+              Just TreeType -> Right <$> saveTree ubs
               _ -> fail $ absSha <> " is not GIT tree nor GIT blob"
           case lr of
             Left () -> pure ()

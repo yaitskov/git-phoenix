@@ -106,7 +106,6 @@ storeGitObject (dedupMap, !countDown, !mapSize) gob = do
      Just _dedupSuffix -> do
        dod <- asks $ untag . destObjectDir
        let uberGob = dod </> gobPath
-       -- putStrLn $ "dedupSuffix " <> show dedupSuffix <> "; uberGob " <> show uberGob <> "; origob " <> show (gobOrigin gob)
        pathIsSymbolicLink uberGob >>= \case
          True ->
            replaceSymLinkWithDisambiguate uberGob gob

@@ -25,7 +25,7 @@ uniqBs :: PhoenixExtractM m =>
   GitPath x ->
   Tagged Compressed LByteString ->
   GitObjType ->
-  m FilePath -- LByteString
+  m FilePath
 uniqBs ambiHash (Tagged preCbs) expectedGitObjType = do
   case parseFileLinks cbs of
     [_] -> fail $ show cbs <> " is not ambiguous"
@@ -34,21 +34,17 @@ uniqBs ambiHash (Tagged preCbs) expectedGitObjType = do
       disLinks <- disambiguateByPair expectedGitObjType $ fmap L8.unpack links
       case disLinks of
         [] -> fail $ show cbs <> " is emply list after dis"
-        [a] -> do
-          -- putStrLn $ "Filtered links " <> show (length links - 1)
-          pure a  -- withCompressed' a pure
-        uniqLinks -> do
-          -- putStrLn $ "Filtered links " <> show (length links - length uniqLinks)
-          chooseOneLink uniqLinks
+        [a] -> pure a
+        uniqLinks -> chooseOneLink uniqLinks
   where
     chooseOneLink links = do
       forM_ (zip [0 :: Int ..] links) $ \(i, l) -> putStrLn $ printf "%4d) %s" i l
       putStrLn "-----------------------------------------------------------"
       putStrLn $ "Enter link number to disambiguate SHA " <> toFp ambiHash <> " of " <> show expectedGitObjType
-      i <- readNumber 0 (length links - 1) -- pure $ length links - 1  --
+      i <- readNumber 0 (length links - 1)
       case links !? i of
         Nothing -> fail $ "Link index out of range: " <> show i <> " for " <> show (length links)
-        Just l -> pure l -- withCompressed' l pure
+        Just l -> pure l
     cbs = L.drop (L.length compressedDisambiguate) preCbs
     parseFileLinks bs =
       case L.splitAt encodedIntLen bs of
