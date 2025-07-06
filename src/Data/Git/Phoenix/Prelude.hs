@@ -17,6 +17,7 @@ import Debug.TraceEmbrace as X hiding (a)
 import Data.Conduit as X (runConduitRes, (.|))
 import Data.List as X ((!?))
 import Data.Tagged as X (Tagged (..), untag)
+import Data.Word8 as X (isHexDigit)
 import Relude as X
 import System.FilePath as X ((</>), dropFileName)
 import System.Time.Extra as X

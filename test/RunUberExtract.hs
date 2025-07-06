@@ -6,15 +6,20 @@ import Data.Git.Phoenix.CmdArgs
 import Data.Git.Phoenix.CmdRun
 import Data.Git.Phoenix.Prelude
 import Test.QuickCheck as QC
-import UnliftIO.Directory ( getPermissions, setPermissions
-                          , setOwnerWritable, getFileSize
-                          )
+import UnliftIO.Directory
+-- ( getPermissions, setPermissions
+--                           , setOwnerWritable, getFileSize
+--                           , removePathForcibly, makeAbsolute
+--                           )
 import UnliftIO.IO (hSeek, SeekMode (..))
 import UnliftIO.Process
-import UnliftIO.Temporary (withSystemTempDirectory)
+import UnliftIO.Temporary
 
 main :: IO ()
-main = do
+main = -- do
+    -- let rdir = "tmpdir"
+    -- removePathForcibly rdir
+    -- createDirectory rdir
   withSystemTempDirectory "gitphoenix" $ \rdir ->
     let phOut = rdir </> "photorec-output" in do
       createDirectory phOut
@@ -29,21 +34,26 @@ main = do
       runCmd BuildUberRepo { inDir = Tagged phOut
                            , outDir = Tagged uberOut
                            }
-      currentHead <- BS.readFile ".git/refs/heads/master"
+      currentHead <- readBranchCommit ".git/refs/heads/master"
       let gitOut = rdir </> "git-phoenix"
-      putStrLn $ "gitOut " <> show gitOut <> " ; uberOut " <> uberOut
-      putStrLn =<< readProcess "ls" ["-l", uberOut </> "c7"] "" -- callCommand "ls -l ; pwd"
-      runCmd ExtractCommitTreeAsGitRepo { rootCommit = Tagged $ C8.unpack currentHead
+      -- putStrLn $ "gitOut " <> show gitOut <> "; com " <> currentHead <> " ; uberOut " <> uberOut
+      -- eeeetHead <- BS.readFile ".git/objects/69/6b0b2d3b87e8fa4532a0e0da69baadaa8dd42a"
+      -- putStrLn $ "[" <> show (C8.unpack currentHead) <> "] show eeeetHead
+
+      -- putStrLn =<< readProcess "ls" ["-l", uberOut </> "69"] "" -- callCommand "ls -l ; pwd"
+      -- putStrLn =<< readProcess "ls" ["-l", uberOut] "" -- callCommand "ls -l ; pwd"
+
+      runCmd ExtractCommitTreeAsGitRepo { rootCommit = Tagged currentHead
                                         , uberRepoDir = Tagged uberOut
                                         , gitRepoOut = Tagged gitOut
                                         }
-
-
       callCommand $ "git -C " <> gitOut <> " fsck --full"
-      gotHead <- BS.readFile (gitOut </> ".git/refs/heads/master")
+      gotHead <- readBranchCommit (gitOut </> ".git/refs/heads/master")
       when (gotHead /= currentHead) $ do
-        fail $ "HEAD commit mismatch\nGot:" <> show gotHead <> "\nExpected: " <> show currentHead
+        fail $ "HEAD commit mismatch\nGot:      [" <> gotHead
+                               <> "]\nExpected: [" <> currentHead <> "]"
   where
+    readBranchCommit fp = C8.unpack . BS.takeWhile isHexDigit <$> BS.readFile fp
     cases =
       [ ("trail-trash", trailTrash)
       , ("middle-trash", middleTrash)
@@ -70,7 +80,7 @@ main = do
       pure $ nextFileName + 1
     symlinks destDir nextFileName gitObjFp = liftIO $ do
       let destFp = destDir </> show nextFileName <> ".go1"
-      createFileLink gitObjFp destFp
+      (`createFileLink` destFp) =<< makeAbsolute gitObjFp
       pure $ nextFileName + 1
     cleanCopy destDir nextFileName gitObjFp = liftIO $ do
       let destFp = destDir </> show nextFileName <> ".go1"

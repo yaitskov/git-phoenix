@@ -11,6 +11,8 @@ class HasInHandlesSem m where
 instance (Monad m, HasInHandlesSem m) => HasInHandlesSem (ResourceT m) where
   getInHandlesSem = lift getInHandlesSem
 
+data Compressed
+
 withHandleX :: (NFData a, MonadUnliftIO m, HasInHandlesSem m) =>
   IOMode -> FilePath -> (Handle -> m a) -> m a
 withHandleX mode fp a = do
@@ -23,13 +25,12 @@ withHandleX mode fp a = do
   where
     go h = do
       !r <- a h
-      rnf r `seq` pure r
+      case rnf r of
+        () -> pure r
 
 withHandle :: (NFData a, MonadUnliftIO m, HasInHandlesSem m) =>
   FilePath -> (Handle -> m a) -> m a
 withHandle = withHandleX ReadMode
-
-data Compressed
 
 withCompressedH :: (NFData a, MonadUnliftIO m, HasInHandlesSem m) =>
   FilePath ->
@@ -72,3 +73,30 @@ readNumber minVal maxVal = go
         Nothing -> do
             putStrLn "Value is number. Try again"
             go
+
+-- withHandleX' :: (NFData a, MonadUnliftIO m) =>
+--   IOMode -> FilePath -> (Handle -> m a) -> m a
+-- withHandleX' mode fp a = do
+--   -- withFile is not applicable because Handle might be closed twice
+--   -- https://github.com/haskell/bytestring/issues/707
+--   bracket (liftIO $ openBinaryFile fp mode)
+--     (\h -> whenM (hIsOpen h) $ hClose h) go
+--   where
+--     go h = do
+--       !r <- a h
+--       deepseq r `seq` pure r
+
+-- withHandle' :: (NFData a, MonadUnliftIO m) =>
+--   FilePath -> (Handle -> m a) -> m a
+-- withHandle' = withHandleX' ReadMode
+
+-- withCompressedH' :: (NFData a, MonadUnliftIO m) =>
+--   FilePath ->
+--   (Tagged Compressed LByteString -> LByteString -> m a) ->
+--   m a
+-- withCompressedH' fp a =
+--   withHandle' ($(tr "/fp") fp) $ \inH -> hGetContents inH >>= (\cbs -> a (Tagged cbs) $ decompress cbs)
+
+-- withCompressed' :: (HasCallStack, NFData a, MonadUnliftIO m) =>
+--   FilePath -> (L.ByteString -> m a) -> m a
+-- withCompressed' fp a = withCompressedH' fp (\_cbs bs -> a bs)
