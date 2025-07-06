@@ -10,4 +10,5 @@ jobs:
     - uses: cachix/install-nix-action@v27
       with:
         nix_path: nixpkgs=channel:nixos-unstable
+    - run: nix-shell --run unpack-git-repo.sh
     - run: nix-build
