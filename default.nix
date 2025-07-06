@@ -23,7 +23,7 @@ let
   sources = [
     "^(trace-embrace.yaml|app|src|test).*$"
     "^changelog[.]md$"
-    "^[.]git$"
+    "\\.git.*"
     "^.*\\.cabal$"
   ];
 
