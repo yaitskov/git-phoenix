@@ -7,19 +7,12 @@ import Data.Git.Phoenix.CmdRun
 import Data.Git.Phoenix.Prelude
 import Test.QuickCheck as QC
 import UnliftIO.Directory
--- ( getPermissions, setPermissions
---                           , setOwnerWritable, getFileSize
---                           , removePathForcibly, makeAbsolute
---                           )
 import UnliftIO.IO (hSeek, SeekMode (..))
 import UnliftIO.Process
 import UnliftIO.Temporary
 
 main :: IO ()
-main = -- do
-    -- let rdir = "tmpdir"
-    -- removePathForcibly rdir
-    -- createDirectory rdir
+main =
   withSystemTempDirectory "gitphoenix" $ \rdir ->
     let phOut = rdir </> "photorec-output" in do
       createDirectory phOut
@@ -36,14 +29,7 @@ main = -- do
                            }
       currentHead <- readBranchCommit ".git/refs/heads/master"
       let gitOut = rdir </> "git-phoenix"
-      -- putStrLn $ "gitOut " <> show gitOut <> "; com " <> currentHead <> " ; uberOut " <> uberOut
-      -- eeeetHead <- BS.readFile ".git/objects/69/6b0b2d3b87e8fa4532a0e0da69baadaa8dd42a"
-      -- putStrLn $ "[" <> show (C8.unpack currentHead) <> "] show eeeetHead
-
-      -- putStrLn =<< readProcess "ls" ["-l", uberOut </> "69"] "" -- callCommand "ls -l ; pwd"
-      -- putStrLn =<< readProcess "ls" ["-l", uberOut] "" -- callCommand "ls -l ; pwd"
-
-      runCmd ExtractCommitTreeAsGitRepo { rootCommit = Tagged currentHead
+      runCmd ExtractCommitTreeAsGitRepo { rootCommit = Tagged $ take 15 currentHead
                                         , uberRepoDir = Tagged uberOut
                                         , gitRepoOut = Tagged gitOut
                                         }

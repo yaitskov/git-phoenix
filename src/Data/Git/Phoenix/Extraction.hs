@@ -4,14 +4,13 @@ import Data.ByteString.Lazy.Char8 qualified as L8
 import Data.Git.Phoenix.App
 import Data.Git.Phoenix.CmdArgs
 import Data.Git.Phoenix.Commit
+import Data.Git.Phoenix.Io
 import Data.Git.Phoenix.Object
 import Data.Git.Phoenix.Prelude
+import Data.Git.Phoenix.Repo
 import Data.Git.Phoenix.Sha
 import Data.Git.Phoenix.ShaCollision
-import Data.Git.Phoenix.Repo
-import Data.Git.Phoenix.Io
 import Data.Git.Phoenix.Tree
-
 
 
 readCommitObject :: PhoenixExtractM m => GitPath Commit -> m (Maybe (GitPath Commit), GitPath Tree)
@@ -57,12 +56,28 @@ extractCommit ohp = do
 
 extractCommitChainAsRepo :: PhoenixExtractM m => Tagged ShaPrefix String -> m ()
 extractCommitChainAsRepo (Tagged rootCommit) = do
-  gitDir <- untag <$> asks destGitDir
-  initGitRepo gitDir
-  extractCommit (shaToPath rootCommit)
-  withBinaryFile
-    (gitDir </> ".git" </> "refs" </> "heads" </> "master")
-    WriteMode
-    (`hPut` L8.pack rootCommit)
+  (Tagged udr) <- asks uberDir
+  completePath (udr </> (toFp $ shaToPath rootCommit)) >>= \case
+    [up] -> do
+      gitDir <- untag <$> asks destGitDir
+      initGitRepo gitDir
+      let uc = GitPath . $(tw "/udr up") $ makeRelative udr up
+      extractCommit uc
+      withBinaryFile
+        (gitDir </> ".git" </> "refs" </> "heads" </> "master")
+        WriteMode
+        (`hPut` toCommitSha uc)
+    [] -> fail $ "No commit matching prefix: " <> show rootCommit
+    ambiP -> fail $ "Commit prefix is ambioguous:\n " <> intercalate "\n" ambiP
 
-    -- (Tagged $ gitDir </> ".git" </> "objects")
+completePath :: MonadUnliftIO m => FilePath -> m [FilePath]
+completePath fp = do
+  ifM (doesFileExist fp) (pure [fp]) $ do
+    ifM (doesDirectoryExist fp)
+      (completeNonEmptyDir fp id) $ do
+        case splitFileName fp of
+          (dp, fpre) ->
+            completeNonEmptyDir dp (filter (fpre `isPrefixOf`))
+  where
+    completeNonEmptyDir dp fnf =
+      listDirectory dp >>= (\case [] -> pure [dp] ; o -> pure $ fmap (dp </>) o) . fnf

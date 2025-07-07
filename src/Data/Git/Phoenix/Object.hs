@@ -2,6 +2,7 @@ module Data.Git.Phoenix.Object where
 
 import Data.Binary qualified as B
 import Data.ByteString.Lazy qualified as L
+import Data.ByteString.Lazy.Char8 qualified as L8
 import Data.Git.Phoenix.Prelude
 
 data GitObjType = CommitType | TreeType | BlobType | CollidedHash deriving (Show, Eq)
@@ -10,6 +11,9 @@ data GitObjTypeG = Commit | Tree deriving (Show, Eq)
 
 -- | Path relative to .git/objects or uber dir
 newtype GitPath (t :: GitObjTypeG) = GitPath { toFp :: FilePath } deriving (Show, Eq, NFData)
+
+toCommitSha :: GitPath t -> LByteString
+toCommitSha (GitPath p) = L8.pack $ filter (/= '/') p
 
 classifyGitObject :: LByteString -> Maybe GitObjType
 classifyGitObject bs

@@ -19,7 +19,7 @@ import Data.List as X ((!?))
 import Data.Tagged as X (Tagged (..), untag)
 import Data.Word8 as X (isHexDigit)
 import Relude as X
-import System.FilePath as X ((</>), dropFileName)
+import System.FilePath as X ((</>), dropFileName, splitFileName, makeRelative)
 import System.Time.Extra as X
 import Text.Printf as X
 import UnliftIO.IO as X (withBinaryFile, hIsOpen, hClose)
@@ -29,4 +29,5 @@ import UnliftIO.Directory as X
   ( createFileLink, createDirectoryIfMissing
   , pathIsSymbolicLink, makeAbsolute, createDirectory
   , getSymbolicLinkTarget, removeFile, copyFile
+  , doesFileExist, doesDirectoryExist, listDirectory
   )
