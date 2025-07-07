@@ -18,12 +18,12 @@ let
   importGit = drv:
     drv.overrideAttrs (oa: {
       buildInputs = (oa.buildInputs or []) ++ [pkgs.git];
-      patchPhase = ''bash ./unpack-git-repo.sh'';
+      # patchPhase = ''bash ./unpack-git-repo.sh'';
     });
 
   sources = [
     "^(trace-embrace.yaml|app|src|test).*$"
-    "^(changelog[.]md|unpack-git-repo[.]sh)$"
+    "^(changelog[.]md|test-git-objects.*)$"
     "\\.git.*"
     "^.*\\.cabal$"
   ];

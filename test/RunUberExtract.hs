@@ -20,14 +20,15 @@ main =
         let destDir = phOut </> d
         createDirectory destDir
         runConduitRes
-          (  sourceDirectoryDeep False (".git" </> "objects")
+          (  sourceDirectoryDeep False "test-git-objects"
           .| foldMC (f destDir) (0 :: Int)
           )
       let uberOut = rdir </> "uber"
       runCmd BuildUberRepo { inDir = Tagged phOut
                            , outDir = Tagged uberOut
                            }
-      currentHead <- readBranchCommit ".git/refs/heads/master"
+      let currentHead = "62324a152b2f9272c922571ab1e08a5212da2d65"
+      -- readBranchCommit ".git/refs/heads/master"
       let gitOut = rdir </> "git-phoenix"
       runCmd ExtractCommitTreeAsGitRepo { rootCommit = Tagged $ take 15 currentHead
                                         , uberRepoDir = Tagged uberOut
