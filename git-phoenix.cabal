@@ -149,6 +149,7 @@ library
     Data.Git.Phoenix.Io
     Data.Git.Phoenix.Object
     Data.Git.Phoenix.Prelude
+    Data.Git.Phoenix.Pretty
     Data.Git.Phoenix.Repo
     Data.Git.Phoenix.Sha
     Data.Git.Phoenix.ShaCollision
@@ -171,6 +172,7 @@ library
     , template-haskell        < 3
     , time                    < 2
     , trace-embrace           >= 1.2.0 && < 2
+    , wl-pprint-text          < 2
     , word8                   < 1
     , zlib                    < 1
 
@@ -183,7 +185,7 @@ test-suite test
     test
   ghc-options: -Wall -rtsopts -threaded -main-is RunUberExtract
   build-depends:
-    git-phoenix, QuickCheck, process
+    git-phoenix, QuickCheck, unliftio
 
 executable git-phoenix
   import: base

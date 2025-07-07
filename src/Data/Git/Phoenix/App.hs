@@ -33,4 +33,15 @@ type PhoenixExtractM m = (PhoenixM m, MonadReader PhoenixExtractConf m)
 instance HasInHandlesSem (ReaderT PhoenixExtractConf IO) where
   getInHandlesSem = asks inHandlesSem'
 
+data PhoenixSearchConf
+  = PhoenixSearchConf
+    { uberRepoDir :: Tagged InDir FilePath
+    , inHandlesSem'' :: U.QSem
+    }
+
+type PhoenixSearchM m = (PhoenixM m, MonadReader PhoenixSearchConf m)
+
+instance HasInHandlesSem (ReaderT PhoenixSearchConf IO) where
+  getInHandlesSem = asks inHandlesSem''
+
 type PhoenixCoCon m = (PhoenixM m, MonadResource m)

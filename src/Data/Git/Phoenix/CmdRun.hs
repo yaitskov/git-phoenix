@@ -2,8 +2,10 @@ module Data.Git.Phoenix.CmdRun where
 
 import Data.Git.Phoenix.App
 import Data.Git.Phoenix.CmdArgs
+import Data.Git.Phoenix.CommitSearch
 import Data.Git.Phoenix.Extraction
 import Data.Git.Phoenix.Prelude
+
 import Data.Git.Phoenix.Uber
 
 runCmd :: CmdArgs -> IO ()
@@ -18,5 +20,8 @@ runCmd = \case
     runReaderT
       (extractCommitChainAsRepo rootCommit)
       (PhoenixExtractConf gitRepoOut uberRepoDir s)
-  s@SearchCommitBy {} {- author, daysBefore, uberRepoDir, daysAfter -} -> -- do
-    fail $ "Search is not implemented " <> show s
+  SearchCommitBy { author, daysBefore, uberRepoDir, daysAfter } -> do
+    s <- newQSem =<< getNumCapabilities
+    runReaderT
+      (searchCommit author daysAfter daysBefore)
+      (PhoenixSearchConf uberRepoDir s)

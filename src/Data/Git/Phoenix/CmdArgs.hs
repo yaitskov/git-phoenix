@@ -13,6 +13,8 @@ import Text.Regex.TDFA
 data InDir
 data OutDir
 data ShaPrefix
+data DaysAfter
+data DaysBefore
 
 data CmdArgs
   = BuildUberRepo
@@ -26,9 +28,9 @@ data CmdArgs
     }
   | SearchCommitBy
     { author :: String
-    , daysBefore :: Int
+    , daysBefore :: Tagged DaysBefore Int
     , uberRepoDir :: Tagged InDir FilePath
-    , daysAfter :: Int
+    , daysAfter :: Tagged DaysAfter Int
     }
     deriving (Show, Eq)
 
@@ -40,11 +42,11 @@ execWithArgs a = a =<< liftIO (execParser $ info (cmdp <**> helper) phelp)
     searchP =
       SearchCommitBy
       <$> strOption (long "author" <> short 'a' <> help "Prefix of commit's author")
-      <*> option auto (long "days-before" <> short 'b' <> showDefault <> value 180
-                       <> help "Exclude commits older than N days")
+      <*> (Tagged <$> option auto (long "days-before" <> short 'b' <> showDefault <> value 0
+                       <> help "Exclude commits older than N days"))
       <*> inUberDirOp
-      <*> option auto (long "days-after" <> short 'f' <> showDefault <> value 0
-                       <> help "Exclude commits newer than N days")
+      <*> (Tagged <$> option auto (long "days-after" <> short 'f' <> showDefault <> value 180
+                       <> help "Exclude commits newer than N days"))
     cmdp =
       hsubparser
         (  command "uber"

@@ -10,7 +10,7 @@ import Data.Git.Phoenix.Object
 import Data.Git.Phoenix.Prelude
 
 
-disambiguateByPair :: PhoenixExtractM m => GitObjType -> [FilePath] -> m [FilePath]
+disambiguateByPair :: PhoenixM m => GitObjType -> [FilePath] -> m [FilePath]
 disambiguateByPair tt links =
   fmap (snd . head) . groupWith fst . sort . catMaybes <$> mapM go links
   where
@@ -26,7 +26,7 @@ uniqBs :: PhoenixExtractM m =>
   Tagged Compressed LByteString ->
   GitObjType ->
   m FilePath
-uniqBs ambiHash (Tagged preCbs) expectedGitObjType = do
+uniqBs ambiHash cbs expectedGitObjType = do
   case parseFileLinks cbs of
     [_] -> fail $ show cbs <> " is not ambiguous"
     [] -> fail $ show cbs <> " is emply list"
@@ -45,8 +45,11 @@ uniqBs ambiHash (Tagged preCbs) expectedGitObjType = do
       case links !? i of
         Nothing -> fail $ "Link index out of range: " <> show i <> " for " <> show (length links)
         Just l -> pure l
-    cbs = L.drop (L.length compressedDisambiguate) preCbs
-    parseFileLinks bs =
+
+parseFileLinks :: Tagged Compressed LByteString -> [LByteString]
+parseFileLinks (Tagged preCbs) = go cbs
+  where
+    go bs =
       case L.splitAt encodedIntLen bs of
         ("", _) -> []
         (binLen, bs') ->
@@ -55,10 +58,12 @@ uniqBs ambiHash (Tagged preCbs) expectedGitObjType = do
               case L.splitAt fsLinkLen bs' of
                 (fsLinkBs, bs'')
                   | L.length fsLinkBs == fsLinkLen ->
-                    fsLinkBs : parseFileLinks bs''
+                    fsLinkBs : go bs''
                   | otherwise ->
                       error $ "Expected link len " <> show fsLinkLen
                         <> " but got " <> show (L.length fsLinkBs)
             Left e ->
               error $ "List of files with collided SHA is corrupted (error: "
                 <> show e <> ") near: "  <> show bs
+
+    cbs = L.drop (L.length compressedDisambiguate) preCbs
