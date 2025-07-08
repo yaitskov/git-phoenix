@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 module Data.Git.Phoenix.Pretty
   ( doc
-  , hsep -- Pretty (..)
+  , hsep
   , vsep
   , (&!)
   , ($$)
@@ -13,9 +13,9 @@ module Data.Git.Phoenix.Pretty
 
 import Data.Time ( NominalDiffTime )
 import Control.Exception ( IOException )
--- import Data.Typeable
 import Relude
-import Text.PrettyPrint.Leijen.Text as PP hiding ((<$>), bool, group, hsep, vsep, empty, isEmpty, (</>))
+import Text.PrettyPrint.Leijen.Text as PP hiding
+  ( (<$>), bool, group, hsep, vsep, empty, isEmpty, (</>) )
 import Text.PrettyPrint.Leijen.Text qualified as PP
 
 infixr 5 $$

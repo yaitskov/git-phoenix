@@ -155,6 +155,10 @@ library
     Data.Git.Phoenix.ShaCollision
     Data.Git.Phoenix.Tree
     Data.Git.Phoenix.Uber
+  other-modules:
+      Paths_git_phoenix
+  autogen-modules:
+      Paths_git_phoenix
   build-depends:
     , base                    < 5
     , binary                  < 1
@@ -191,10 +195,6 @@ executable git-phoenix
   import: base
   ghc-options: -Wall -threaded -with-rtsopts=-N
   main-is: GitPhoenix.hs
-  other-modules:
-      Paths_git_phoenix
-  autogen-modules:
-      Paths_git_phoenix
   hs-source-dirs:
       app
   build-depends:

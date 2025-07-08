@@ -32,6 +32,7 @@ data CmdArgs
     , uberRepoDir :: Tagged InDir FilePath
     , daysAfter :: Tagged DaysAfter Int
     }
+  | GitPhoenixVersion
     deriving (Show, Eq)
 
 execWithArgs :: MonadIO m => (CmdArgs -> m a) -> m a
@@ -55,6 +56,8 @@ execWithArgs a = a =<< liftIO (execParser $ info (cmdp <**> helper) phelp)
              "puts symlinks to them in a folder (uber repo)")
         <> command "extract"
            (infoP extractP "clone GIT repository with root commit sha")
+        <> command "version"
+           (infoP (pure GitPhoenixVersion) "print program version")
         <> command "search"
            (infoP searchP "find commit in the uber repo"))
 

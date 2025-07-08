@@ -5,8 +5,10 @@ import Data.Git.Phoenix.CmdArgs
 import Data.Git.Phoenix.CommitSearch
 import Data.Git.Phoenix.Extraction
 import Data.Git.Phoenix.Prelude
-
+import Data.Git.Phoenix.Pretty
 import Data.Git.Phoenix.Uber
+import Data.Version (showVersion)
+import Paths_git_phoenix
 
 runCmd :: CmdArgs -> IO ()
 runCmd = \case
@@ -16,7 +18,6 @@ runCmd = \case
     runReaderT (recoverFrom inDir) (PhoenixUberConf outDir s)
   ExtractCommitTreeAsGitRepo { rootCommit, uberRepoDir, gitRepoOut } -> do
     s <- newQSem . $(tw "numCapabilities/") =<< getNumCapabilities
-
     runReaderT
       (extractCommitChainAsRepo rootCommit)
       (PhoenixExtractConf gitRepoOut uberRepoDir s)
@@ -25,3 +26,5 @@ runCmd = \case
     runReaderT
       (searchCommit author daysAfter daysBefore)
       (PhoenixSearchConf uberRepoDir s)
+  GitPhoenixVersion ->
+    printDoc $ "Version" <+> doc (showVersion version) <> linebreak
