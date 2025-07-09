@@ -8,7 +8,6 @@ import Data.Git.Phoenix.Prelude
 import Test.QuickCheck as QC
 import UnliftIO.Directory
 import UnliftIO.IO (hSeek, SeekMode (..))
-import UnliftIO.Process
 import UnliftIO.Temporary
 
 currentHead :: String

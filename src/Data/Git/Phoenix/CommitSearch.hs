@@ -39,8 +39,9 @@ readCommitObject gop = go . (</> toFp gop) . untag =<< asks A.uberRepoDir
             Just (commitTs, bs'') ->
               case extractMessage bs'' of
                 message ->
-                  let sha = gitPath2Bs gop in
+                  let sha = gitPath2Bs . shaToPath . showDigest $ sha1 bs in
                     pure [CommitObject {message, sha, commitTs, author}]
+
 
     go :: FilePath -> m [CommitObject]
     go absGop = do
@@ -68,8 +69,9 @@ parseGitObject authorRegex (Tagged epochSecondsAfter) (Tagged epochSecondsBefore
   where
     commitPredicate co =
       case execute authorRegex (Data.Git.Phoenix.CommitSearch.author co) of
-        Right _ ->
+        Right (Just _) ->
           commitTs co >= epochSecondsAfter && commitTs co <= epochSecondsBefore
+        Right _ -> False
         Left _ -> False
 
 dedupOrderedList :: Eq a => [a] -> [a]

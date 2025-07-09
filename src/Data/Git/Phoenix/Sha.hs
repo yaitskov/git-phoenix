@@ -13,7 +13,6 @@ module Data.Git.Phoenix.Sha
 import Data.Binary qualified as B
 import Data.ByteArray.Encoding (Base(Base16), convertFromBase, convertToBase)
 import Data.ByteString.Char8 qualified as C
--- import Data.ByteString.Lazy qualified as L
 import Data.ByteString.Lazy.Char8 qualified as L8
 import Data.Char (isHexDigit)
 import Data.Digest.Pure.SHA (Digest, SHA1State, showDigest, sha1)
