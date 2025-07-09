@@ -1,4 +1,4 @@
-module RunUberExtract where
+module Data.Git.Phoenix.Test where
 
 import Data.ByteString qualified as BS
 import Data.ByteString.Char8 qualified as C8
@@ -11,8 +11,17 @@ import UnliftIO.IO (hSeek, SeekMode (..))
 import UnliftIO.Process
 import UnliftIO.Temporary
 
-main :: IO ()
-main =
+currentHead :: String
+currentHead = "62324a152b2f9272c922571ab1e08a5212da2d65"
+
+readBranchCommit :: FilePath -> IO String
+readBranchCommit fp = C8.unpack . BS.takeWhile isHexDigit <$> BS.readFile fp
+
+data Root
+data Uber
+
+withUber :: (Tagged Root FilePath -> Tagged Uber FilePath -> IO ()) -> IO ()
+withUber doWithUberDir =
   withSystemTempDirectory "gitphoenix" $ \rdir ->
     let phOut = rdir </> "photorec-output" in do
       createDirectory phOut
@@ -27,20 +36,8 @@ main =
       runCmd BuildUberRepo { inDir = Tagged phOut
                            , outDir = Tagged uberOut
                            }
-      let currentHead = "62324a152b2f9272c922571ab1e08a5212da2d65"
-      -- readBranchCommit ".git/refs/heads/master"
-      let gitOut = rdir </> "git-phoenix"
-      runCmd ExtractCommitTreeAsGitRepo { rootCommit = Tagged $ take 15 currentHead
-                                        , uberRepoDir = Tagged uberOut
-                                        , gitRepoOut = Tagged gitOut
-                                        }
-      callCommand $ "git -C " <> gitOut <> " fsck --full"
-      gotHead <- readBranchCommit (gitOut </> ".git/refs/heads/master")
-      when (gotHead /= currentHead) $ do
-        fail $ "HEAD commit mismatch\nGot:      [" <> gotHead
-                               <> "]\nExpected: [" <> currentHead <> "]"
+      doWithUberDir (Tagged @Root rdir) (Tagged @Uber uberOut)
   where
-    readBranchCommit fp = C8.unpack . BS.takeWhile isHexDigit <$> BS.readFile fp
     cases =
       [ ("trail-trash", trailTrash)
       , ("middle-trash", middleTrash)
@@ -80,16 +77,3 @@ genBs = liftIO $ generate go
     go = do
       s <- QC.getSize
       BS.pack <$> QC.vector (1 + s)
-
-  {-
-     creat temp dir as photorec output
-     inside dir that dir
-       find files from .git/objects and symlink them
-       put links in 2 dirs - for duplicate simulation
-       copy with trash bytes - for duplicate simulation
-     run Uber
-     run Extract
-     run git fsck --full
-      $(git log -1 | grep -o -E 'commit [a-f0-9]+'
-         $(git status | wc -l) == 0
-   -}

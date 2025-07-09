@@ -21,10 +21,7 @@ runCmd = \case
     runReaderT
       (extractCommitChainAsRepo rootCommit)
       (PhoenixExtractConf gitRepoOut uberRepoDir s)
-  SearchCommitBy { author, daysBefore, uberRepoDir, daysAfter } -> do
-    s <- newQSem =<< getNumCapabilities
-    runReaderT
-      (searchCommit author daysAfter daysBefore)
-      (PhoenixSearchConf uberRepoDir s)
+  SearchCommitBy scb ->
+    runCommitSearch scb >>= printDoc . commitObjectsToDoc
   GitPhoenixVersion ->
     printDoc $ "Version" <+> doc (showVersion version) <> linebreak

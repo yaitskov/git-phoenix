@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 module Data.Git.Phoenix.CmdArgs where
 
 import Data.Char (toLower)
@@ -16,6 +17,14 @@ data ShaPrefix
 data DaysAfter
 data DaysBefore
 
+data SearchCommitBy = SearchCommitBy2
+    { author :: String
+    , daysBefore :: Tagged DaysBefore Int
+    , uberRepoDir :: Tagged InDir FilePath
+    , daysAfter :: Tagged DaysAfter Int
+    }
+    deriving (Show, Eq)
+
 data CmdArgs
   = BuildUberRepo
     { inDir :: Tagged InDir FilePath
@@ -26,12 +35,7 @@ data CmdArgs
     , uberRepoDir :: Tagged InDir FilePath
     , gitRepoOut :: Tagged OutDir FilePath
     }
-  | SearchCommitBy
-    { author :: String
-    , daysBefore :: Tagged DaysBefore Int
-    , uberRepoDir :: Tagged InDir FilePath
-    , daysAfter :: Tagged DaysAfter Int
-    }
+  | SearchCommitBy SearchCommitBy
   | GitPhoenixVersion
     deriving (Show, Eq)
 
@@ -41,13 +45,14 @@ execWithArgs a = a =<< liftIO (execParser $ info (cmdp <**> helper) phelp)
     uberP = BuildUberRepo <$> inputDirOp <*> outputDirOp
     extractP = ExtractCommitTreeAsGitRepo <$> shaP <*> inUberDirOp <*> gitOutDirOp
     searchP =
-      SearchCommitBy
-      <$> strOption (long "author" <> short 'a' <> help "Prefix of commit's author")
-      <*> (Tagged <$> option auto (long "days-before" <> short 'b' <> showDefault <> value 0
-                       <> help "Exclude commits older than N days"))
-      <*> inUberDirOp
-      <*> (Tagged <$> option auto (long "days-after" <> short 'f' <> showDefault <> value 180
-                       <> help "Exclude commits newer than N days"))
+      SearchCommitBy <$>
+        (SearchCommitBy2
+          <$> strOption (long "author" <> short 'a' <> help "Prefix of commit's author")
+          <*> (Tagged <$> option auto (long "days-before" <> short 'b' <> showDefault <> value 0
+                           <> help "Exclude commits older than N days"))
+          <*> inUberDirOp
+          <*> (Tagged <$> option auto (long "days-after" <> short 'f' <> showDefault <> value 180
+                           <> help "Exclude commits newer than N days")))
     cmdp =
       hsubparser
         (  command "uber"
