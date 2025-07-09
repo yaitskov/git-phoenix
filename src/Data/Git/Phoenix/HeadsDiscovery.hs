@@ -95,7 +95,7 @@ discoverHeads authorPat = do
             then m
             else M.insert k v m
           ucm = M.foldlWithKey unreachable mempty cm
-      pure $ M.toList ucm
+      pure . sortOn (\(_, c) -> (commitTs c, comAuthor c)) $ M.toList ucm
 
 runHeadsDiscovery :: HeadsDiscovery -> IO [(ShaBs, CommitObject)]
 runHeadsDiscovery HeadsDiscovery2 { author, uberRepoDir } = do
