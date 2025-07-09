@@ -36,7 +36,7 @@ unit_uber_heads_discovery = withUber go
         { author = "Daniil"
         , uberRepoDir = Tagged uberDir
         }
-      assertEqual "no commits matching author name" (commits == []) False
+      assertEqual "no commits matching author name" 3 (length commits)
 
     authorMismatch uberDir = do
       commits <- runHeadsDiscovery HeadsDiscovery2

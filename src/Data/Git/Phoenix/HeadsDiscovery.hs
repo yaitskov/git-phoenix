@@ -49,7 +49,7 @@ readCommitObject gop =
     goCommit bs =
       case extractParent bs of
         ("", bs') -> orphanCommit Nothing bs'
-        (parent, bs') -> orphanCommit (Just parent) bs'
+        (parent, bs') -> orphanCommit (Just $ hexToBin parent) bs'
 
     go :: FilePath -> m [CommitObject]
     go absGop = do
@@ -107,7 +107,10 @@ runHeadsDiscovery HeadsDiscovery2 { author, uberRepoDir } = do
 formatCommit :: (ShaBs, CommitObject) -> Doc
 formatCommit (sha, co) = hsep
   [ take 8 (binSha2Str sha)
-  , formatTime defaultTimeLocale "%Y-%m-%d %H:%M" (secondsToUtcTime . fromIntegral $ commitTs co)
+  , formatTime
+      defaultTimeLocale
+      "%Y-%m-%d %H:%M"
+      (secondsToUtcTime . fromIntegral $ commitTs co)
   , C8.unpack (comAuthor co)
   , take 60 (C8.unpack (message co))
   ]
