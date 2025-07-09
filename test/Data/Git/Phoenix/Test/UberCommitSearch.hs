@@ -1,14 +1,13 @@
 module Data.Git.Phoenix.Test.UberCommitSearch where
 
+import Data.ByteString.Lazy qualified as L
 import Data.Git.Phoenix.CmdArgs
 import Data.Git.Phoenix.CommitSearch
 import Data.Git.Phoenix.Prelude
 import Data.Git.Phoenix.Test
 import Data.Time
--- import Data.Time.Clock
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Time.Clock.System
--- import Data.Time.Format
 import Test.Tasty.HUnit
 
 epoch :: UTCTime
@@ -23,6 +22,28 @@ utcTimeToMillis = (`div` 1000) . utcTimeToMicros
 
 utcTimeToSeconds :: UTCTime -> Integer
 utcTimeToSeconds = (`div` 1000) . utcTimeToMillis
+
+unit_format_commit :: IO ()
+unit_format_commit =
+  assertEqual
+    "gold"
+    (  "00010203 2025-07-06 15:12 Daniil Iaitskov  Hello\nWorld\n"
+    <> "fffefdfc 2025-07-06 14:05 Iaitskov Daniil  Bye\n" :: String
+    )
+    (show $ commitObjectsToDoc
+     [ CommitObject
+       { message = "Hello\nWorld\n"
+       , sha = L.pack [0..19]
+       , commitTs = 1751814758
+       , author = "Daniil Iaitskov "
+       }
+     , CommitObject
+       { message = "Bye"
+       , sha = L.pack . take 20 $ reverse [0.. 0xFF]
+       , commitTs = 1751810759
+       , author = "Iaitskov Daniil "
+       }
+     ])
 
 unit_uber_commit_search :: IO ()
 unit_uber_commit_search = withUber go
