@@ -46,7 +46,7 @@ extractCommitTs bs =
 
 extractMessage :: LByteString -> LByteString
 extractMessage bs =
-  case extractField W._lf "\n\n " (L.span (/= W._lf)) bs of
+  case extractField W._lf "\n\n" (L.span (/= W._lf)) bs of
     (msgFirstLine, _) -> msgFirstLine
 
 extractTreeHash :: LByteString -> LbsPair

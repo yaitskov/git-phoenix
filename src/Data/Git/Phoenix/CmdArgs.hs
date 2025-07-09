@@ -17,13 +17,21 @@ data ShaPrefix
 data DaysAfter
 data DaysBefore
 
-data SearchCommitBy = SearchCommitBy2
+data SearchCommitBy
+  = SearchCommitBy2
     { author :: String
     , daysBefore :: Tagged DaysBefore Int
     , uberRepoDir :: Tagged InDir FilePath
     , daysAfter :: Tagged DaysAfter Int
     }
-    deriving (Show, Eq)
+  deriving (Show, Eq)
+
+data HeadsDiscovery
+  = HeadsDiscovery2
+    { author :: String
+    , uberRepoDir :: Tagged InDir FilePath
+    }
+  deriving (Show, Eq)
 
 data CmdArgs
   = BuildUberRepo
@@ -36,18 +44,23 @@ data CmdArgs
     , gitRepoOut :: Tagged OutDir FilePath
     }
   | SearchCommitBy SearchCommitBy
+  | HeadsDiscovery HeadsDiscovery
   | GitPhoenixVersion
     deriving (Show, Eq)
 
 execWithArgs :: MonadIO m => (CmdArgs -> m a) -> m a
 execWithArgs a = a =<< liftIO (execParser $ info (cmdp <**> helper) phelp)
   where
+    authorP =
+      strOption (long "author" <> short 'a' <> value "." <>
+                 help "Regex pattern of commit's author")
     uberP = BuildUberRepo <$> inputDirOp <*> outputDirOp
     extractP = ExtractCommitTreeAsGitRepo <$> shaP <*> inUberDirOp <*> gitOutDirOp
+    headsDiscoveryP = HeadsDiscovery <$> (HeadsDiscovery2 <$> authorP <*> inUberDirOp)
     searchP =
       SearchCommitBy <$>
         (SearchCommitBy2
-          <$> strOption (long "author" <> short 'a' <> help "Prefix of commit's author")
+          <$> authorP
           <*> (Tagged <$> option auto (long "days-before" <> short 'b' <> showDefault <> value 0
                            <> help "Exclude commits older than N days"))
           <*> inUberDirOp
@@ -61,6 +74,8 @@ execWithArgs a = a =<< liftIO (execParser $ info (cmdp <**> helper) phelp)
              "puts symlinks to them in a folder (uber repo)")
         <> command "extract"
            (infoP extractP "clone GIT repository with root commit sha")
+        <> command "heads"
+           (infoP headsDiscoveryP "discover commits without descendants")
         <> command "version"
            (infoP (pure GitPhoenixVersion) "print program version")
         <> command "search"

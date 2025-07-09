@@ -2,7 +2,8 @@ module Data.Git.Phoenix.CmdRun where
 
 import Data.Git.Phoenix.App
 import Data.Git.Phoenix.CmdArgs
-import Data.Git.Phoenix.CommitSearch
+import Data.Git.Phoenix.CommitSearch as CS
+import Data.Git.Phoenix.HeadsDiscovery as HD
 import Data.Git.Phoenix.Extraction
 import Data.Git.Phoenix.Prelude
 import Data.Git.Phoenix.Pretty
@@ -22,6 +23,8 @@ runCmd = \case
       (extractCommitChainAsRepo rootCommit)
       (PhoenixExtractConf gitRepoOut uberRepoDir s)
   SearchCommitBy scb ->
-    runCommitSearch scb >>= printDoc . commitObjectsToDoc
+    runCommitSearch scb >>= printDoc . CS.commitObjectsToDoc
+  HeadsDiscovery ctx ->
+    runHeadsDiscovery ctx >>= printDoc . HD.commitObjectsToDoc
   GitPhoenixVersion ->
     printDoc $ "Version" <+> doc (showVersion version) <> linebreak

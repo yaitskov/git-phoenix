@@ -8,6 +8,7 @@ module Data.Git.Phoenix.Sha
   , showDigest
   , sha1
   , gitPath2Bs
+  , cutGitPath
   ) where
 
 import Data.Binary qualified as B
@@ -17,6 +18,7 @@ import Data.ByteString.Lazy.Char8 qualified as L8
 import Data.Char (isHexDigit)
 import Data.Digest.Pure.SHA (Digest, SHA1State, showDigest, sha1)
 import Data.Git.Phoenix.Object
+import Data.List.Extra qualified as L
 import Relude
 
 type ComHash = Digest SHA1State
@@ -51,3 +53,9 @@ gitPath2Bs (GitPath fp) =
   case fp of
     a:b:'/':r -> hexToBin . L8.pack $ a:b:r
     _ -> error . toText $ "Bad GitPath: " <> fp
+
+cutGitPath :: FilePath -> Maybe LByteString
+cutGitPath fp =
+  case L.takeEnd 41 fp of
+    a:b:'/':r -> Just . hexToBin . L8.pack $ a:b:r
+    _ -> Nothing

@@ -143,9 +143,9 @@ library
     Data.Git.Phoenix.CmdArgs
     Data.Git.Phoenix.CmdRun
     Data.Git.Phoenix.Commit
-    Data.Git.Phoenix.CommitGraph
     Data.Git.Phoenix.CommitSearch
     Data.Git.Phoenix.Extraction
+    Data.Git.Phoenix.HeadsDiscovery
     Data.Git.Phoenix.Io
     Data.Git.Phoenix.Object
     Data.Git.Phoenix.Prelude
@@ -186,8 +186,9 @@ test-suite test
   main-is: Driver.hs
   other-modules:
     Data.Git.Phoenix.Test
-    Data.Git.Phoenix.Test.UberExtract
     Data.Git.Phoenix.Test.UberCommitSearch
+    Data.Git.Phoenix.Test.UberExtract
+    Data.Git.Phoenix.Test.UberHeadsDiscovery
     Discovery
   hs-source-dirs:
     test

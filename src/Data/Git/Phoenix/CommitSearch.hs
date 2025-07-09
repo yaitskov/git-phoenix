@@ -26,8 +26,8 @@ data CommitObject
 
 instance NFData CommitObject
 
-readCommitObject :: forall m . PhoenixSearchM m => GitPath Commit -> m [CommitObject]
-readCommitObject gop = go . (</> toFp gop) . untag =<< asks A.uberRepoDir
+readCommitObject :: forall m . PhoenixSearchM m => FilePath -> m [CommitObject]
+readCommitObject = go
   where
     -- "commit 192\NULtree 844eaa6a04859d069e9ae10f2c6c293d23efc459\nauthor Daniil Iaitskov <dyaitskov@gmail.com> 1750985584 -0800\ncommitter Daniil Iaitskov <dyaitskov@gmail.com> 1 750 985 584 -0800\n\n init git-phoenix\n"
     goCommit bs =
@@ -65,7 +65,7 @@ parseGitObject :: PhoenixSearchM m =>
   FilePath ->
   m [CommitObject]
 parseGitObject authorRegex (Tagged epochSecondsAfter) (Tagged epochSecondsBefore) fp =
-  filter commitPredicate <$> readCommitObject (GitPath fp)
+  filter commitPredicate <$> readCommitObject fp
   where
     commitPredicate co =
       case execute authorRegex (Data.Git.Phoenix.CommitSearch.author co) of
