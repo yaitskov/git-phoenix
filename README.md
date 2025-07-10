@@ -49,6 +49,15 @@ $ tree /paranoid-no-brutforce-nonexpert-nocorrupted-zlib/
 $
 ```
 
+## Building
+
+The easiest way to build the project is to use nix.
+
+```shell
+$ nix-build
+$ ./result/bin/git-phoenix --help
+```
+
 ## git-phoenix recovery steps
 
 git-phoenix sunny day scenario assumes execution of several commands to
@@ -81,8 +90,14 @@ Command prints SHAs of consistent commit chains i.e. ending with a
 commit without parent.
 
 ```shell
-$ git-phoenix extract -g my-foo -u uber -s 8fb567617e7
-7768eed9387ff 2025.12.31 23:45 John Dow - tests fixed
+$ git-phoenix heads -a '^John' -u uber
+7768eed9387ff 1970-01-01 00:00 John Doe  Big Bang
+```
+
+Arbitrary commit can be filter in uber repo too:
+```shell
+$ git-phoenix search --days-before 0 --days-after 9 -a '^John' -u uber
+7768eed9387ff 1970-01-01 00:00 John Doe  Big Bang
 ```
 
 ### Step 3. Real GIT repo extraction
@@ -94,8 +109,21 @@ referring specified commit, chopping off trailing trash and
 disambiguating SHAs.
 
 ```shell
-$ git-phoenix extract -g my-foo -u uber -s 8fb567617e7
-$ cd my-foo
-$ git checkout .
+$ git-phoenix extract -g my-foo -u uber -s 7768eed9387ff
+$ git -C my-foo reset
+$ git -C my-foo checkout .
 $ echo Woo-Hah
+```
+
+## Development environment
+
+## Building
+
+HLS should be available inside dev env.
+
+```shell
+$ nix-shell
+$ emacs src/Data/Git/Phoenix.hs &
+$ cabal build
+$ cabal test
 ```
