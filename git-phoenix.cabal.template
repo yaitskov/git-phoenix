@@ -1,7 +1,7 @@
 cabal-version: 3.0
 name:          git-phoenix
 version:       0.0.1
-synopsis:      Recove Git repositories from disk recovery tool output (photorec)
+synopsis:      Recover Git repositories from disk recovery tool output (photorec)
 description:
 
 homepage:      http://github.com/yaitskov/git-phoenix
