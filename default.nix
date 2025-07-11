@@ -1,19 +1,45 @@
 { system ? builtins.currentSystem or "x86_64-linux"
-, ghc ? "ghc9122"
+, ghcName ? "ghc9122"
 }:
 
 let
-  nix = import ./nix;
-  pkgs = nix.pkgSetForSystem system {
+  nix = import ./nix { inherit ghcName; };
+  originPkgs = nix.pkgSetForSystem system {
     config = {
       allowBroken = true;
       allowUnfree = true;
     };
   };
+  pkgs = originPkgs.pkgsMusl;
   inherit (pkgs) lib;
+  inherit (lib) strings;
+  inherit (strings) concatStringsSep;
+  staticExtraLibs = [
+    "--ghc-option=-optl=-static"
+    "--extra-lib-dirs=${pkgs.gmp6.override { withStatic = true; }}/lib"
+    "--extra-lib-dirs=${pkgs.zlib.static}/lib"
+    "--extra-lib-dirs=${pkgs.libelf.overrideAttrs (old: { dontDisableStatic = true; })}/lib"
+    "--extra-lib-dirs=${pkgs.libffi.overrideAttrs (old: { dontDisableStatic = true; })}/lib"
+  ];
   hsPkgSetOverlay = pkgs.callPackage ./nix/haskell/overlay.nix {
     inherit (nix) sources;
   };
+  assertStatic = drv:
+    drv.overrideAttrs(oa: {
+      postInstall = (oa.postInstall or "") + ''
+        for b in $out/bin/*
+        do
+          if ldd "$b"
+          then
+            echo "ldd succeeded on $b, which may mean that it is not statically linked"
+            exit 1
+          fi
+        done
+      '';});
+  makeStatic = drv:
+    drv.overrideAttrs(oa: {
+      configureFlags = (oa.configureFlags or []) ++ staticExtraLibs;
+    });
 
   importGit = drv:
     drv.overrideAttrs (oa: {
@@ -29,8 +55,8 @@ let
   ];
 
   base = hsPkgs.callCabal2nix "git-phoenix" (lib.sourceByRegex ./. sources) { };
-  git-phoenix-overlay = _hf: _hp: { git-phoenix = importGit base; };
-  baseHaskellPkgs = pkgs.haskell.packages.${ghc};
+  git-phoenix-overlay = _hf: _hp: { git-phoenix = assertStatic (makeStatic (importGit base)); };
+  baseHaskellPkgs = pkgs.haskell.packages.${ghcName};
   hsOverlays = [ hsPkgSetOverlay git-phoenix-overlay ];
   hsPkgs = baseHaskellPkgs.override (old: {
     overrides =
@@ -38,29 +64,36 @@ let
       hsOverlays;
   });
 
-  hls = pkgs.haskell.lib.overrideCabal hsPkgs.haskell-language-server
-     (_: { enableSharedExecutables = true; });
+  # hls = pkgs.haskell.lib.overrideCabal hsPkgs.haskell-language-server
+  #    (_: { enableSharedExecutables = true; });
 
   shell = hsPkgs.shellFor {
     packages = p: [ p.git-phoenix ];
     nativeBuildInputs = (with pkgs; [
       cabal-install
-      ghcid
-      hlint
-      niv
-      pandoc
-      git
-    ]) ++ [ hls hsPkgs.upload-doc-to-hackage ];
+      # ghcid
+      # hlint
+      # niv
+      # pandoc
+      # git
+    ]); # ++ [ hls hsPkgs.upload-doc-to-hackage ];
     shellHook = ''
       export PS1='$ '
       echo $(dirname $(dirname $(which ghc)))/share/doc > .haddock-ref
+      function cabal() {
+        case $1 in
+          build) ${pkgs.cabal-install.out}/bin/cabal "$@" \
+                    ${concatStringsSep " " staticExtraLibs} ;;
+          *) ${pkgs.cabal-install.out}/bin/cabal "$@" ;;
+        esac
+      }
     '';
   };
 
   git-phoenix = hsPkgs.git-phoenix;
 in {
   inherit hsPkgs;
-  inherit ghc;
+  inherit ghcName;
   inherit pkgs;
   inherit shell;
   inherit git-phoenix;

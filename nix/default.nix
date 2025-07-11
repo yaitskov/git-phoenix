@@ -1,3 +1,4 @@
+{ ghcName }:
 rec {
   chooseSources =
     if builtins.pathExists /home/dan/pro/nixpkgs
@@ -8,6 +9,7 @@ rec {
       else null;
   sources = import ./sources.nix { inherit chooseSources; };
   defaultNixpkgs = import sources.nixpkgs;
-  pkgSetForSystem = system: args: defaultNixpkgs (args // { inherit system; });
+  staticGhcOverlay = import ./haskell/static-ghc.nix { inherit ghcName; };
+  pkgSetForSystem = system: args: defaultNixpkgs (args // { inherit system; overlays = [staticGhcOverlay]; });
   pkgSet = pkgSetForSystem builtins.currentSystem;
 }
