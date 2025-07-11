@@ -127,3 +127,11 @@ $ emacs src/Data/Git/Phoenix.hs &
 $ cabal build
 $ cabal test
 ```
+
+## Static linking
+
+Static is not enabled by default, because GitHub CI job times out.
+
+```shell
+nix-build --arg staticBuild true
+```
