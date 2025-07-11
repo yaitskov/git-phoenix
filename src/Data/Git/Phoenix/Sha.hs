@@ -11,17 +11,23 @@ module Data.Git.Phoenix.Sha
   , cutGitPath
   ) where
 
+import Crypto.Hash.SHA1 (hashlazy)
 import Data.Binary qualified as B
 import Data.ByteArray.Encoding (Base(Base16), convertFromBase, convertToBase)
 import Data.ByteString.Char8 qualified as C
 import Data.ByteString.Lazy.Char8 qualified as L8
 import Data.Char (isHexDigit)
-import Data.Digest.Pure.SHA (Digest, SHA1State, showDigest, sha1)
 import Data.Git.Phoenix.Object
 import Data.List.Extra qualified as L
 import Relude
 
-type ComHash = Digest SHA1State
+type ComHash = ByteString
+
+sha1 :: LByteString -> ByteString
+sha1 = hashlazy
+
+showDigest :: ByteString -> String
+showDigest = C.unpack . convertToBase Base16
 
 parseSha1 :: String -> Either String ComHash
 parseSha1

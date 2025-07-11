@@ -63,57 +63,55 @@ library
     Data.Git.Phoenix.Tree
     Data.Git.Phoenix.Uber
   other-modules:
-      Paths_git_phoenix
+    Paths_git_phoenix
   autogen-modules:
-      Paths_git_phoenix
+    Paths_git_phoenix
   build-depends:
     , base                    < 5
     , binary                  < 1
     , conduit                 < 2
     , containers              < 1
+    , cryptohash-sha1         < 1
     , deepseq                 < 2
     , extra                   < 2
-    -- , file-io                 < 1
     , filepath                < 2
     , lens                    < 6
     , memory                  < 1
     , pretty-hex              < 2
-    , SHA                     < 2
     , regex-tdfa              < 2
-    -- , template-haskell        < 3
+    , template-haskell        < 3
     , time                    < 2
-    -- , trace-embrace           >= 1.2.0 && < 2
+    , trace-embrace           >= 1.2.0 && < 2
     , wl-pprint-text          < 2
     , word8                   < 1
     , zlib                    < 1
 
--- test-suite test
---   import: base
---   type: exitcode-stdio-1.0
---   main-is: Driver.hs
---   other-modules:
---     Data.Git.Phoenix.Test
---     Data.Git.Phoenix.Test.UberCommitSearch
---     Data.Git.Phoenix.Test.UberExtract
---     Data.Git.Phoenix.Test.UberHeadsDiscovery
---     Discovery
---   hs-source-dirs:
---     test
---   ghc-options: -Wall -rtsopts -threaded -main-is Driver
---   build-depends:
---     , git-phoenix
---     , QuickCheck
---     , tasty
---     , tasty-discover
---     , tasty-hunit
---     , tasty-quickcheck
---     , time
+test-suite test
+  import: base
+  type: exitcode-stdio-1.0
+  main-is: Driver.hs
+  other-modules:
+    Data.Git.Phoenix.Test
+    Data.Git.Phoenix.Test.UberCommitSearch
+    Data.Git.Phoenix.Test.UberExtract
+    Data.Git.Phoenix.Test.UberHeadsDiscovery
+    Discovery
+  hs-source-dirs:
+    test
+  ghc-options: -Wall -rtsopts -threaded -main-is Driver
+  build-depends:
+    , git-phoenix
+    , QuickCheck
+    , tasty
+    , tasty-discover
+    , tasty-hunit
+    , tasty-quickcheck
+    , time
 
 executable git-phoenix
   import: base
   ghc-options: -Wall -threaded -with-rtsopts=-N
   main-is: GitPhoenix.hs
-  hs-source-dirs:
-      app
+  hs-source-dirs: app
   build-depends:
-      git-phoenix
+    , git-phoenix

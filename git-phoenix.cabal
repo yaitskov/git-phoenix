@@ -189,13 +189,13 @@ library
     , binary                  < 1
     , conduit                 < 2
     , containers              < 1
+    , cryptohash-sha1         < 1
     , deepseq                 < 2
     , extra                   < 2
     , filepath                < 2
     , lens                    < 6
     , memory                  < 1
     , pretty-hex              < 2
-    , SHA                     < 2
     , regex-tdfa              < 2
     , template-haskell        < 3
     , time                    < 2

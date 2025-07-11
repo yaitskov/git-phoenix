@@ -67,6 +67,7 @@ let
     packages = p: [ p.git-phoenix ];
     nativeBuildInputs = (with pkgs; [
       cabal-install
+      pandoc
       git
     ]) ++ [ hsPkgs.upload-doc-to-hackage ];
     shellHook = ''
@@ -74,7 +75,7 @@ let
       echo $(dirname $(dirname $(which ghc)))/share/doc > .haddock-ref
       function cabal() {
         case $1 in
-          build) ${pkgs.cabal-install.out}/bin/cabal "$@" \
+          build|test) ${pkgs.cabal-install.out}/bin/cabal "$@" \
                     ${concatStringsSep " " staticExtraLibs} ;;
           *) ${pkgs.cabal-install.out}/bin/cabal "$@" ;;
         esac

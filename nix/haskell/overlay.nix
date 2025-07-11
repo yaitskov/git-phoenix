@@ -14,10 +14,6 @@ in hfinal: hprev:
 (listToAttrs (map (a:
   nameValuePair a.name
     (dontCheck (hfinal.callCabal2nix a.name a.source { }))) [
-      {
-        name = "SHA";
-        source = sources.SHA;
-      }
     ])) // {
       "upload-doc-to-hackage" = hfinal.callPackage sources.upload-doc-to-hackage {};
       "th-lock" = hfinal.callHackageDirect
