@@ -44,7 +44,6 @@ let
   importGit = drv:
     drv.overrideAttrs (oa: {
       buildInputs = (oa.buildInputs or []) ++ [pkgs.git];
-      # patchPhase = ''bash ./unpack-git-repo.sh'';
     });
 
   sources = [
@@ -64,19 +63,12 @@ let
       hsOverlays;
   });
 
-  # hls = pkgs.haskell.lib.overrideCabal hsPkgs.haskell-language-server
-  #    (_: { enableSharedExecutables = true; });
-
   shell = hsPkgs.shellFor {
     packages = p: [ p.git-phoenix ];
     nativeBuildInputs = (with pkgs; [
       cabal-install
-      # ghcid
-      # hlint
-      # niv
-      # pandoc
-      # git
-    ]); # ++ [ hls hsPkgs.upload-doc-to-hackage ];
+      git
+    ]) ++ [ hsPkgs.upload-doc-to-hackage ];
     shellHook = ''
       export PS1='$ '
       echo $(dirname $(dirname $(which ghc)))/share/doc > .haddock-ref
