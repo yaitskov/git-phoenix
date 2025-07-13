@@ -73,6 +73,7 @@ let
     nativeBuildInputs = (with pkgs; [
       cabal-install
       pandoc
+      niv
       git
     ]) ++ [ hsPkgs.upload-doc-to-hackage ];
     shellHook =
