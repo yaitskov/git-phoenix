@@ -7,9 +7,10 @@ import Data.Git.Phoenix.Prelude
 import Data.Git.Phoenix.Sha
 import Data.Git.Phoenix.ShaCollision
 import Data.Git.Phoenix.Io
+import Lazy.Scope as S
 
-dropTreeHeader :: LByteString -> LByteString
-dropTreeHeader = L.drop 1 . L.dropWhile (/= 0)
+dropTreeHeader :: Bs s -> Bs s
+dropTreeHeader = S.drop 1 . S.dropWhile (/= 0)
 
 data DOF = Dir | File deriving (Eq, Show, Generic)
 
@@ -57,16 +58,16 @@ instance NFData NonRecursive
 
 parseTreeObject :: PhoenixExtractM m =>
   FilePath ->
-  Tagged Compressed LByteString ->
-  LByteString ->
-  m (Either (Tagged Compressed LByteString) [(DOF, LByteString)])
+  Tagged Compressed (Bs s) ->
+  Bs s ->
+  LazyT s m (Either (Tagged Compressed LByteString) [(DOF, LByteString)])
 parseTreeObject gop cbs bs =
-  case classifyGitObject bs of
+  classifyGitObject bs >>= \case
     Just BlobType -> fail $ gop <> " is Git blob but expected Git tree"
     Just CommitType -> fail $ gop <> " is Git commit but expected Git tree"
-    Just TreeType -> do
-      pure . Right . readTreeShas $ dropTreeHeader bs
-    Just CollidedHash -> pure $ Left cbs
+    Just TreeType ->
+      Right <$> unScope (bs2Scoped readTreeShas (dropTreeHeader bs))
+    Just CollidedHash -> Left <$> sequenceA (fmap toLbs cbs)
     Nothing -> fail $ gop <> " is not a Git tree object"
 
 onRight_ :: Monad m => (b -> m ()) -> Either a b -> m (Either a b)
@@ -74,7 +75,9 @@ onRight_ f = \case
   v@(Left _) -> pure v
   r@(Right v) -> f v >> pure r
 
-extractTree :: PhoenixExtractM m => GitPath Tree -> m ()
+getDestDir :: MonadReader PhoenixExtractConf m => m FilePath
+getDestDir = (\(Tagged r) -> r </> ".git" </> "objects") <$> asks destGitDir
+extractTree :: forall m. PhoenixExtractM m => GitPath Tree -> m ()
 extractTree treeHash = do
   Tagged udr <- asks uberDir
   dd <- getDestDir
@@ -82,53 +85,61 @@ extractTree treeHash = do
     mapM_ (copyTreeLinks dd) . $(tw "len/")
   where
     copyTree treePath trH = do
-      let save bs = do
+      let
+        save :: forall s. Bs s -> LazyT s m ()
+        save bs = do
             destDir <- getDestDir
             saveCompressedBs (destDir </> toFp trH) bs
-      rl <- withCompressedH treePath $ \cTreeBs treeBs ->
-        parseTreeObject treePath cTreeBs treeBs >>= onRight_ (\_ -> save treeBs)
+      rl <- collapse $ do
+        withCompressedH treePath $ \cTreeBs treeBs ->
+          parseTreeObject treePath cTreeBs treeBs >>= onRight_ (\_ -> save treeBs)
       shas <- case rl of
         Right shas' -> pure shas'
         Left cbs -> do
           uniPath <- uniqBs (GitPath @Tree treePath) cbs TreeType
-          withCompressed uniPath
-            (\ubs -> do
-                save ubs
-                pure . readTreeShas $ dropTreeHeader ubs
-            )
+          collapse $ do
+            withCompressed uniPath
+              (\ubs -> do
+                  save ubs
+                  unScope (bs2Scoped readTreeShas $ dropTreeHeader ubs)
+              )
       pure shas
-    getDestDir = (\(Tagged r) -> r </> ".git" </> "objects") <$> asks destGitDir
+
     copyTreeLinks destDir (dof, binSha) = do
       (Tagged udr) <- asks uberDir
       liftIO $(trIo "/destDir binSha")
       let shaP = binSha2Path binSha
           absSha = udr </> toFp shaP
+          saveBlob :: forall s. Bs s -> LazyT s m ()
           saveBlob = saveCompressedBs (destDir </> toFp shaP)
+          saveTree :: forall s. Bs s -> LazyT s m [(DOF, LByteString)]
           saveTree bs = do
             saveBlob bs
-            pure . readTreeShas $ dropTreeHeader bs
-      nonRec <- withCompressedH absSha $ \cbs bs ->
-        case classifyGitObject bs of
-          Just BlobType
-            | dof == File -> JustBlob <$> saveBlob bs
-            | otherwise -> fail $ absSha <> " is not a GIT blob"
-          Just TreeType
-            | dof == Dir -> TreeShas <$> saveTree bs
-            | otherwise -> fail $ absSha <> " is not a GIT tree"
-          Just CollidedHash ->
-            pure $ Collision cbs
-          _ -> fail $ absSha <> " is not a GIT tree nor GIT blob nor disambiguate file"
+            unScope (bs2Scoped readTreeShas $ dropTreeHeader bs)
+      nonRec <- collapse $ do
+        withCompressedH absSha $ \cbs bs ->
+          classifyGitObject bs >>= \case
+            Just BlobType
+              | dof == File -> JustBlob <$> saveBlob bs
+              | otherwise -> fail $ absSha <> " is not a GIT blob"
+            Just TreeType
+              | dof == Dir -> TreeShas <$> saveTree bs
+              | otherwise -> fail $ absSha <> " is not a GIT tree"
+            Just CollidedHash ->
+              Collision <$> sequenceA (fmap toLbs cbs)
+            _ -> fail $ absSha <> " is not a GIT tree nor GIT blob nor disambiguate file"
       case nonRec of
         JustBlob () -> pure ()
         TreeShas rows ->
           mapM_ (copyTreeLinks destDir) rows
         Collision cbs' -> do
           uniPath <- uniqBs shaP cbs' (dofToGitObjType dof)
-          !lr <- withCompressed uniPath $ \ubs ->
-            case classifyGitObject ubs of
-              Just BlobType -> Left <$> saveBlob ubs
-              Just TreeType -> Right <$> saveTree ubs
-              _ -> fail $ absSha <> " is not GIT tree nor GIT blob"
+          !lr <- collapse $ do
+            withCompressed uniPath $ \ubs ->
+              classifyGitObject ubs >>= \case
+                Just BlobType -> Left <$> saveBlob ubs
+                Just TreeType -> Right <$> saveTree ubs
+                _ -> fail $ absSha <> " is not GIT tree nor GIT blob"
           case lr of
             Left () -> pure ()
             Right rows -> mapM_ (copyTreeLinks destDir) rows

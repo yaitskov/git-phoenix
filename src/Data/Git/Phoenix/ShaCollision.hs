@@ -8,18 +8,19 @@ import Data.Git.Phoenix.App
 import Data.Git.Phoenix.Io
 import Data.Git.Phoenix.Object
 import Data.Git.Phoenix.Prelude
-
+import Lazy.Scope as S
 
 disambiguateByPair :: PhoenixM m => GitObjType -> [FilePath] -> m [FilePath]
 disambiguateByPair tt links =
   fmap (snd . head) . groupWith fst . sort . catMaybes <$> mapM go links
   where
-    go l = do
-      withCompressed l $ \bs -> do
-        case classifyGitObject bs of
-          Just x | x == tt -> pure $ Just (bs, l)
-                 | otherwise -> pure Nothing
-          Nothing -> pure Nothing
+    go l =
+      collapse $ do
+        withCompressed l $ \bs ->
+          classifyGitObject bs >>= \case
+            Just x | x == tt -> Just . (, l) <$> S.toLbs bs
+                   | otherwise -> pure Nothing
+            Nothing -> pure Nothing
 
 uniqBs :: PhoenixExtractM m =>
   GitPath x ->
@@ -66,4 +67,4 @@ parseFileLinks (Tagged preCbs) = go cbs
               error $ "List of files with collided SHA is corrupted (error: "
                 <> show e <> ") near: "  <> show bs
 
-    cbs = L.drop (L.length compressedDisambiguate) preCbs
+    cbs = L.drop compressedDisambiguateLen preCbs

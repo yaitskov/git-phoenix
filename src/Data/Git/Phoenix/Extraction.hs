@@ -11,41 +11,43 @@ import Data.Git.Phoenix.Repo
 import Data.Git.Phoenix.Sha
 import Data.Git.Phoenix.ShaCollision
 import Data.Git.Phoenix.Tree
+import Lazy.Scope as S
 
-
-readCommitObject :: PhoenixExtractM m => GitPath Commit -> m (Maybe (GitPath Commit), GitPath Tree)
+readCommitObject :: forall m. PhoenixExtractM m => GitPath Commit -> m (Maybe (GitPath Commit), GitPath Tree)
 readCommitObject gop = go . (</> toFp gop) . untag =<< asks uberDir
   where
+    goCommit :: forall s. Bs s -> LazyT s m (Maybe (GitPath Commit), GitPath Tree)
     goCommit bs =
-      case extractTreeHash $ $(tr "eee/bs") bs of
+      extractTreeHash {- fix traceEmbrace to uncomment this snippet: $ $(tr "eee/bs") -} bs >>= \case
         ("", _) -> fail $ show gop <> " does not have tree field"
         (treeComit, bs') -> do
           gitDir <- untag <$> asks destGitDir
           saveCompressedBs
             (gitDir </> ".git" </> "objects" </> toFp gop)
             bs
-          case extractParent bs' of
-            ("", _) -> pure (Nothing, shaToPath $ L8.unpack treeComit)
-            (!ph, _) -> pure ( Just . shaToPath $ L8.unpack ph
-                            , $(tr "/treeComit") . shaToPath $ L8.unpack treeComit
-                            )
+          extractParent bs' >>= \case
+            ("", _) -> (Nothing, ) . shaToPath . L8.unpack <$> toLbs treeComit
+            (!ph, _) -> (,)
+                        <$> (Just . shaToPath . L8.unpack <$> toLbs ph)
+                        <*> ( $(tr "/treeComit") . shaToPath . L8.unpack <$> toLbs treeComit)
     go absGop = do
-      lr <- withCompressedH absGop $ \cbs bs ->
-        case classifyGitObject bs of
-          Just BlobType -> fail $ show gop <> " is Git blob but expected Git commit"
-          Just TreeType -> fail $ show gop <> " is Git tree but expected Git commit"
-          Just CommitType -> Right <$> goCommit bs
-          Just CollidedHash -> pure $ Left cbs
-          Nothing -> fail $ show gop <> " is not a Git commit object"
+      lr <- collapse $ do
+        withCompressedH absGop $ \cbs bs ->
+          classifyGitObject bs >>= \case
+            Just BlobType -> fail $ show gop <> " is Git blob but expected Git commit"
+            Just TreeType -> fail $ show gop <> " is Git tree but expected Git commit"
+            Just CommitType -> Right <$> goCommit bs
+            Just CollidedHash -> Left <$> sequenceA (fmap toLbs cbs)
+            Nothing -> fail $ show gop <> " is not a Git commit object"
       case lr of
         Right cmt -> pure cmt
         Left cbs -> do
             uniPath <- uniqBs gop cbs CommitType
-            withCompressed uniPath $ \ubs ->
-              case classifyGitObject ubs of
-                Just CommitType -> goCommit ubs
-                ops -> fail $ "Uniq BS of " <> show gop <> " is not commit but " <> show ops
-
+            collapse $ do
+              withCompressed uniPath $ \ubs ->
+                classifyGitObject ubs >>= \case
+                  Just CommitType -> goCommit ubs
+                  ops -> fail $ "Uniq BS of " <> show gop <> " is not commit but " <> show ops
 
 extractCommit :: PhoenixExtractM m => GitPath Commit -> m ()
 extractCommit ohp = do
@@ -63,10 +65,10 @@ extractCommitChainAsRepo (Tagged rootCommit) = do
       initGitRepo gitDir
       let uc = GitPath . $(tw "/udr up") $ makeRelative udr up
       extractCommit uc
-      withBinaryFile
+      writeBinaryFile
         (gitDir </> ".git" </> "refs" </> "heads" </> "master")
         WriteMode
-        (`hPut` toCommitSha uc)
+        (`hPutLbs` toCommitSha uc)
     [] -> fail $ "No commit matching prefix: " <> show rootCommit
     ambiP -> fail $ "Commit prefix is ambioguous:\n " <> intercalate "\n" ambiP
 

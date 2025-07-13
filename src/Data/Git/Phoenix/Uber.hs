@@ -13,6 +13,7 @@ import Data.Git.Phoenix.Prelude
 import Data.Git.Phoenix.Sha
 import Data.List qualified as I
 import Data.Map.Strict qualified as M
+import Lazy.Scope as S
 
 type ShaDedupMap = M.Map ComHash Int
 
@@ -28,25 +29,25 @@ instance NFData GitObject
 gitObjectFilePath :: GitObject -> FilePath
 gitObjectFilePath = uncurry (</>) . I.splitAt 2 . showDigest . gobHash
 
-mkGitObject :: PhoenixM m => FilePath -> m (Maybe GitObject)
-mkGitObject fp =
-  withHandle fp $ \inH -> do
-    magicBs <- hGet inH 2
-    if zlibP magicBs
-      then do
-        (`catch` skipCorruptedFile) $ do
-          headerBs <- (toLazy magicBs <>) . toLazy <$> hGet inH 510
-          if gitObjectP $ decompress headerBs
-            then do
-              !goh <- sha1 . decompress . (headerBs <>) <$> hGetContents inH
-              pure . Just $! GitObject goh fp
-            else
-              pure Nothing
-      else pure Nothing
+mkGitObject :: forall m. PhoenixM m => FilePath -> m (Maybe GitObject)
+mkGitObject fp = S.collapse $ unScope =<< go
   where
+    go :: forall s. LazyT s m (Scoped s (Maybe GitObject))
+    go =
+      withHandle fp $ \inH -> do
+        magicBs <- S.hGet inH 2
+        if zlibP magicBs
+          then do
+            (`catch` skipCorruptedFile) $ do
+              headerBs <- (toLazy magicBs <>) . toLazy <$> S.hGet inH 510
+              ifM (gitObjectP . toBs $ decompress headerBs)
+                (S.bs2Scoped (Just . (`GitObject` fp) . sha1 . decompress) . (toBs headerBs <>) <$> S.hGetContents inH)
+                (pure (pure Nothing))
+          else pure (pure Nothing)
+
     skipCorruptedFile (_ :: DecompressError) = do
       liftIO $ $(trIo "Skip corrupted file/fp")
-      pure Nothing
+      pure (pure Nothing)
 
     zlibNoCompression = "\x0078\x0001"
     zlibDefaultCompression = "\x0078\x009C"
@@ -70,20 +71,21 @@ replaceSymLinkWithDisambiguate :: MonadUnliftIO m => FilePath -> GitObject -> m 
 replaceSymLinkWithDisambiguate uberGob gob = do
   firstGobOrigin <- L8.pack <$> getSymbolicLinkTarget uberGob
   removeFile uberGob
-  withBinaryFile uberGob WriteMode $ \oh ->
-    hPut oh . mconcat $ [ compressedDisambiguate
-                        , B.encode $ L.length firstGobOrigin
-                        , firstGobOrigin
-                        , B.encode $ L.length gobPacked
-                        , gobPacked
-                        ]
+  collapse_ $ do
+    S.withBinaryFile uberGob WriteMode $ \oh ->
+      hPutBs oh . mconcat $ (compressedDisambiguate : fmap toBs [
+                              B.encode $ L.length firstGobOrigin
+                             , firstGobOrigin
+                             , B.encode $ L.length gobPacked
+                             , gobPacked
+                             ])
   where
     gobPacked = L8.pack $ gobOrigin gob
 
 appendPathToUberGob :: MonadUnliftIO m => FilePath -> GitObject -> m ()
 appendPathToUberGob uberGob gob =
-  withBinaryFile uberGob AppendMode $ \oh ->
-    hPut oh $ gobLen <> gobPacked
+  writeBinaryFile uberGob AppendMode $ \oh ->
+    hPutLbs oh $ gobLen <> gobPacked
   where
     gobPacked = L8.pack $ gobOrigin gob
     gobLen = B.encode $ L.length gobPacked

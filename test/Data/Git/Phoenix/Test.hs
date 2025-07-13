@@ -7,7 +7,7 @@ import Data.Git.Phoenix.CmdRun
 import Data.Git.Phoenix.Prelude
 import Test.QuickCheck as QC
 import UnliftIO.Directory
-import UnliftIO.IO (hSeek, SeekMode (..))
+import UnliftIO.IO ( SeekMode(AbsoluteSeek), hSeek, withBinaryFile )
 import UnliftIO.Temporary
 
 currentHead :: String

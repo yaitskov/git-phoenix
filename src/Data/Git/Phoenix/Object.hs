@@ -1,9 +1,12 @@
+{-# OPTIONS_GHC -Wno-orphans #-}
 module Data.Git.Phoenix.Object where
 
 import Data.Binary qualified as B
 import Data.ByteString.Lazy qualified as L
 import Data.ByteString.Lazy.Char8 qualified as L8
 import Data.Git.Phoenix.Prelude
+import Lazy.Scope as S
+import System.IO.Unsafe
 
 data GitObjType = CommitType | TreeType | BlobType | CollidedHash deriving (Show, Eq)
 
@@ -15,32 +18,41 @@ newtype GitPath (t :: GitObjTypeG) = GitPath { toFp :: FilePath } deriving (Show
 toCommitSha :: GitPath t -> LByteString
 toCommitSha (GitPath p) = L8.pack $ filter (/= '/') p
 
-classifyGitObject :: LByteString -> Maybe GitObjType
-classifyGitObject bs
-  | blob `L.isPrefixOf` bs = pure BlobType
-  | tree `L.isPrefixOf` bs = pure TreeType
-  | commit `L.isPrefixOf` bs = pure CommitType
-  | disambiguate `L.isPrefixOf` bs = pure CollidedHash
-  | otherwise = Nothing
+classifyGitObject :: Monad m => Bs s -> LazyT s m (Maybe GitObjType)
+classifyGitObject bs =
+  ifM (blob `S.isPrefixOfM` bs)
+    (pure $ pure BlobType)
+    (ifM (tree `S.isPrefixOfM` bs)
+     (pure $ pure TreeType)
+     (ifM (commit `S.isPrefixOfM` bs)
+       (pure $ pure CommitType)
+       (ifM (disambiguate `S.isPrefixOfM` bs)
+          (pure $ pure CollidedHash)
+         (pure Nothing))))
 
-commit, tree, blob, disambiguate :: L.ByteString
+commit, tree, blob, disambiguate :: Bs s
 disambiguate = "disambigate "
 commit = "commit "
 blob = "blob "
 tree = "tree "
 
-gitObjectP :: LByteString -> Bool
+gitObjectP :: Monad m => Bs s -> LazyT s m Bool
 gitObjectP bs =
-  case classifyGitObject bs of
+  classifyGitObject bs >>= pure . \case
     Nothing -> False
     Just CollidedHash -> False
     Just _ -> True
 
-compressedDisambiguate :: L.ByteString
+compressedDisambiguate :: Bs s
 compressedDisambiguate =
-  compressWith
-    (defaultCompressParams { compressLevel = CompressionLevel 0 })
+  mapLbs
+    (compressWith
+     (defaultCompressParams { compressLevel = CompressionLevel 0 }))
     disambiguate
+
+compressedDisambiguateLen :: Int64
+compressedDisambiguateLen =
+  unsafePerformIO (collapse $ lengthM compressedDisambiguate)
 
 encodedIntLen :: Int64
 encodedIntLen = L.length . B.encode $ L.length ""

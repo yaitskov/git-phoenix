@@ -68,14 +68,15 @@ let
       hsOverlays;
   });
 
+  hls = pkgs.haskell.lib.overrideCabal hsPkgs.haskell-language-server
+    (_: { enableSharedExecutables = true; });
+
   shell = hsPkgs.shellFor {
     packages = p: [ p.git-phoenix ];
-    nativeBuildInputs = (with pkgs; [
-      cabal-install
-      pandoc
-      niv
-      git
-    ]) ++ [ hsPkgs.upload-doc-to-hackage ];
+    nativeBuildInputs =
+      if staticBuild
+      then []
+      else (with pkgs; [ cabal-install pandoc niv git ]) ++ [ hls hsPkgs.upload-doc-to-hackage ];
     shellHook =
       strings.concatStrings
         [''export PS1='$ '

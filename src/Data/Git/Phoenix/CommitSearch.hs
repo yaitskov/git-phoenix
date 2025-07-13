@@ -15,6 +15,7 @@ import Data.Time.Clock.System
 import Data.Time.Format
 import Text.Regex.TDFA.ByteString.Lazy
 import Text.Regex.TDFA
+import Lazy.Scope ( collapse, toLbs, unScope, bs2Scoped )
 
 data CommitObject
   = CommitObject
@@ -31,27 +32,29 @@ readCommitObject = go
   where
     -- "commit 192\NULtree 844eaa6a04859d069e9ae10f2c6c293d23efc459\nauthor Daniil Iaitskov <dyaitskov@gmail.com> 1750985584 -0800\ncommitter Daniil Iaitskov <dyaitskov@gmail.com> 1 750 985 584 -0800\n\n init git-phoenix\n"
     goCommit bs =
-      case extractAuthor bs of
+      extractAuthor bs >>= \case
         ("", _) -> pure []
-        (author, bs') ->
-          case extractCommitTs bs' of
+        (authorBs, bs') ->
+          extractCommitTs bs' >>= \case
             Nothing -> pure []
             Just (commitTs, bs'') ->
-              case extractMessage bs'' of
-                message ->
-                  let sha = gitPath2Bs . shaToPath . showDigest $ sha1 bs in
-                    pure [CommitObject {message, sha, commitTs, author}]
+              extractMessage bs'' >>= toLbs >>=
+                \message -> do
+                  author <- toLbs authorBs
+                  sha <- unScope $ bs2Scoped (gitPath2Bs . shaToPath . showDigest . sha1) bs
+                  pure [CommitObject {message, sha, commitTs, author}]
 
 
     go :: FilePath -> m [CommitObject]
     go absGop = do
-      lr <- withCompressedH absGop $ \cbs bs ->
-        case classifyGitObject bs of
-          Just BlobType -> pure $ Right []
-          Just TreeType -> pure $ Right []
-          Just CommitType -> Right <$> goCommit bs
-          Just CollidedHash -> pure $ Left cbs
-          Nothing -> pure $ Right []
+      lr <- collapse $ do
+        withCompressedH absGop $ \cbs bs ->
+          classifyGitObject bs >>= \case
+            Just BlobType -> pure $ Right []
+            Just TreeType -> pure $ Right []
+            Just CommitType -> Right <$> goCommit bs
+            Just CollidedHash -> Left <$> sequenceA (fmap toLbs cbs)
+            Nothing -> pure $ Right []
       case lr of
         Right cmt -> pure cmt
         Left cbs -> do

@@ -1,9 +1,10 @@
 module Data.Git.Phoenix.Io where
 
 import Data.ByteString.Lazy qualified as L
-import Data.ByteString qualified as BS
 import Data.Git.Phoenix.Prelude
-import System.IO (openBinaryFile)
+import System.IO qualified as IO
+import Lazy.Scope as S
+import UnliftIO.IO qualified as U
 
 class HasInHandlesSem m where
   getInHandlesSem :: m QSem
@@ -13,50 +14,39 @@ instance (Monad m, HasInHandlesSem m) => HasInHandlesSem (ResourceT m) where
 
 data Compressed
 
-withHandleX :: (NFData a, MonadUnliftIO m, HasInHandlesSem m) =>
-  IOMode -> FilePath -> (Handle -> m a) -> m a
+withHandleX :: (MonadUnliftIO m, HasInHandlesSem m) =>
+  IOMode -> FilePath -> (Handle s -> LazyT s m a) -> LazyT s m a
 withHandleX mode fp a = do
-  s <- getInHandlesSem
+  s <- lift getInHandlesSem
   bracket_ (waitQSem s) (signalQSem s) $
-    -- withFile is not applicable because Handle might be closed twice
-    -- https://github.com/haskell/bytestring/issues/707
-    bracket (liftIO $ openBinaryFile fp mode)
-      (\h -> whenM (hIsOpen h) $ hClose h) go
-  where
-    go h = do
-      !r <- a h
-      case rnf r of
-        () -> pure r
+    withBinaryFile fp mode a
 
-withHandle :: (NFData a, MonadUnliftIO m, HasInHandlesSem m) =>
-  FilePath -> (Handle -> m a) -> m a
+withHandle :: (MonadUnliftIO m, HasInHandlesSem m) =>
+  FilePath -> (Handle s -> LazyT s m a) -> LazyT s m a
 withHandle = withHandleX ReadMode
 
-withCompressedH :: (NFData a, MonadUnliftIO m, HasInHandlesSem m) =>
+withCompressedH :: (MonadUnliftIO m, HasInHandlesSem m) =>
   FilePath ->
-  (Tagged Compressed LByteString -> LByteString -> m a) ->
-  m a
+  (Tagged Compressed (Bs s) -> Bs s -> LazyT s m a) ->
+  LazyT s m a
 withCompressedH fp a =
-  withHandle ($(tr "/fp") fp) $ \inH -> hGetContents inH >>= (\cbs -> a (Tagged cbs) $ decompress cbs)
+  withHandle ($(tr "/fp") fp) $ \inH -> hGetContents inH >>= (\cbs -> a (Tagged cbs) $ mapLbs decompress cbs)
 
-withCompressed :: (HasCallStack, NFData a, MonadUnliftIO m, HasInHandlesSem m) =>
-  FilePath -> (HasCallStack => L.ByteString -> m a) -> m a
+withCompressed :: (MonadUnliftIO m, HasInHandlesSem m) =>
+  FilePath -> (Bs s -> LazyT s m a) -> LazyT s m a
 withCompressed fp a = withCompressedH fp (\_cbs bs -> a bs)
 
-hGet :: MonadIO m => Handle -> Int -> m ByteString
-hGet h n = liftIO $ BS.hGet h n
+writeBinaryFile :: MonadUnliftIO m => FilePath -> IOMode -> (IO.Handle -> m ()) -> m ()
+writeBinaryFile fp mode cb = U.withBinaryFile fp mode cb
 
-hGetContents :: MonadIO m => Handle -> m LByteString
-hGetContents h = liftIO $ L.hGetContents h
-
-hPut :: MonadIO m => Handle -> LByteString -> m ()
-hPut h bs = liftIO $ L.hPut h bs
+hPutLbs :: MonadIO m => IO.Handle -> LByteString -> m ()
+hPutLbs h bs = liftIO $ L.hPut h bs
 
 -- | just 'copyFile' is not possible due to trash after archive
-saveCompressedBs :: MonadUnliftIO m => FilePath -> LByteString -> m ()
+saveCompressedBs :: MonadUnliftIO m => FilePath -> Bs s -> LazyT s m ()
 saveCompressedBs fp bs = do
-  createDirectoryIfMissing False $ dropFileName fp
-  withBinaryFile ($(tr "/fp") fp) WriteMode $ \h -> hPut h $ compress bs
+  lift $ createDirectoryIfMissing False $ dropFileName fp
+  withBinaryFile ($(tr "/fp") fp) WriteMode $ \h -> hPutBs h $ mapLbs compress bs
 
 readNumber :: MonadIO m => Int -> Int -> m Int
 readNumber minVal maxVal = go

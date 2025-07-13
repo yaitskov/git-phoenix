@@ -14,6 +14,7 @@ in hfinal: hprev:
 (listToAttrs (map (a:
   nameValuePair a.name
     (dontCheck (hfinal.callCabal2nix a.name a.source { }))) [
+      { name = "lazy-scope";  source = /home/dan/pro/haskell/my/lazy-scope; }
     ])) // {
       "upload-doc-to-hackage" = hfinal.callPackage sources.upload-doc-to-hackage {};
       "th-lock" = hfinal.callHackageDirect

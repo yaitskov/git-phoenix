@@ -18,11 +18,11 @@ import Data.Conduit as X (runConduitRes, (.|))
 import Data.List as X ((!?))
 import Data.Tagged as X (Tagged (..), untag)
 import Data.Word8 as X (isHexDigit)
-import Relude as X
+import Relude as X hiding (Handle)
 import System.FilePath as X ((</>), dropFileName, splitFileName, makeRelative)
 import System.Time.Extra as X
 import Text.Printf as X
-import UnliftIO.IO as X (withBinaryFile, hIsOpen, hClose)
+-- import UnliftIO.IO as X (withBinaryFile, hIsOpen, hClose)
 import UnliftIO.QSem as X (QSem, newQSem, signalQSem, waitQSem)
 import UnliftIO.Exception as X (bracket, bracket_, catch)
 import UnliftIO.Directory as X

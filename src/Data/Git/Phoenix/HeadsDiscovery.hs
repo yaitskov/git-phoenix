@@ -16,6 +16,7 @@ import Data.Git.Phoenix.ShaCollision
 import Data.Time.Format
 import Text.Regex.TDFA.ByteString.Lazy
 import Text.Regex.TDFA
+import Lazy.Scope qualified as S
 
 data CommitObject
   = CommitObject
@@ -36,30 +37,32 @@ readCommitObject gop =
     Just gp -> fmap (gp,) <$> go gop
   where
     orphanCommit parent bs =
-      case extractAuthor bs of
+      extractAuthor bs >>= \case
         ("", _) -> pure []
-        (comAuthor, bs') ->
-          case extractCommitTs bs' of
+        (comAuthorBs, bs') ->
+          extractCommitTs bs' >>= \case
             Nothing -> pure []
             Just (commitTs, bs'') ->
-              case extractMessage bs'' of
-                message ->
-                    pure [CommitObject {message, commitTs, comAuthor, parent}]
+              extractMessage bs'' >>= S.toLbs >>=
+              \message -> do
+                comAuthor <- S.toLbs comAuthorBs
+                pure [CommitObject {message, commitTs, comAuthor, parent}]
 
     goCommit bs =
-      case extractParent bs of
+      extractParent bs >>= \case
         ("", bs') -> orphanCommit Nothing bs'
-        (parent, bs') -> orphanCommit (Just $ hexToBin parent) bs'
+        (parent, bs') -> (`orphanCommit` bs') =<< (Just . hexToBin <$> S.toLbs parent)
 
     go :: FilePath -> m [CommitObject]
     go absGop = do
-      lr <- withCompressedH absGop $ \cbs bs ->
-        case classifyGitObject bs of
-          Just BlobType -> pure $ Right []
-          Just TreeType -> pure $ Right []
-          Just CommitType -> Right <$> goCommit bs
-          Just CollidedHash -> pure $ Left cbs
-          Nothing -> pure $ Right []
+      lr <- S.collapse $ do
+        withCompressedH absGop $ \cbs bs ->
+          classifyGitObject bs >>= \case
+            Just BlobType -> pure $ Right []
+            Just TreeType -> pure $ Right []
+            Just CommitType -> Right <$> goCommit bs
+            Just CollidedHash -> Left <$> sequenceA (fmap S.toLbs cbs)
+            Nothing -> pure $ Right []
       case lr of
         Right cmt -> pure cmt
         Left cbs -> do
