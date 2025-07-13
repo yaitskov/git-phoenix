@@ -6,9 +6,15 @@
     "type": "git"
   },
   "upload-doc-to-hackage": {
-    "sha256": "0r1q21dngyalrm0ad204y470wr3s89mssbw9qi195hpgbp8qs8d2",
+    "branch": "master",
+    "description": "Automated workaround for uploading Cabal docs to hackage",
+    "homepage": null,
+    "owner": "yaitskov",
+    "repo": "upload-doc-to-hackage",
+    "rev": "d342d5659821bcce0233aee38239c3965677221a",
+    "sha256": "1b9z5nfz654j6ayaacnd5r0zmfxp2b91x30rkc2cp8rkfg908gd2",
     "type": "tarball",
-    "url": "https://github.com/yaitskov/upload-doc-to-hackage/archive/a180b14b21610ce39f296ad7b9dcf6dfe9ac69cf.tar.gz",
-    "url_template": "https://github.com/yaitskov/upload-doc-to-hackage/archive/a180b14b21610ce39f296ad7b9dcf6dfe9ac69cf.tar.gz"
+    "url": "https://github.com/yaitskov/upload-doc-to-hackage/archive/d342d5659821bcce0233aee38239c3965677221a.tar.gz",
+    "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
   }
 }
