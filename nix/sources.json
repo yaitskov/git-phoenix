@@ -1,4 +1,16 @@
 {
+    "lazy-scope": {
+        "branch": "master",
+        "description": "Alternative lazy ByteString and ST-like IO Handle",
+        "homepage": null,
+        "owner": "yaitskov",
+        "repo": "lazy-scope",
+        "rev": "49f4dc081c7cb99ee27e97fb7b995328ca3fcba9",
+        "sha256": "1zk06gdg4fyi6w16cy4v119zxdlwdlq9i6w5mdqzs2g0hywwh32l",
+        "type": "tarball",
+        "url": "https://github.com/yaitskov/lazy-scope/archive/49f4dc081c7cb99ee27e97fb7b995328ca3fcba9.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "nixpkgs": {
         "branch": "master",
         "owner": "NixOS",
