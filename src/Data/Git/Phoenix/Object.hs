@@ -5,7 +5,7 @@ import Data.Binary qualified as B
 import Data.ByteString.Lazy qualified as L
 import Data.ByteString.Lazy.Char8 qualified as L8
 import Data.Git.Phoenix.Prelude
-import Lazy.Scope as S
+import Lazy.Scope qualified as S
 
 
 data GitObjType = CommitType | TreeType | BlobType | CollidedHash deriving (Show, Eq)
@@ -20,15 +20,13 @@ toCommitSha (GitPath p) = L8.pack $ filter (/= '/') p
 
 classifyGitObject :: Monad m => Bs s -> LazyT s m (Maybe GitObjType)
 classifyGitObject bs =
-  ifM (blob `S.isPrefixOfM` bs)
-    (pure $ pure BlobType)
-    (ifM (tree `S.isPrefixOfM` bs)
-     (pure $ pure TreeType)
-     (ifM (commit `S.isPrefixOfM` bs)
-       (pure $ pure CommitType)
-       (ifM (toBs disambiguate `S.isPrefixOfM` bs)
-          (pure $ pure CollidedHash)
-         (pure Nothing))))
+  condM
+    [ (blob `S.isPrefixOf` bs, pure $ pure BlobType)
+    , (tree `S.isPrefixOf` bs, pure $ pure TreeType)
+    , (commit `S.isPrefixOf` bs, pure $ pure CommitType)
+    , (toBs disambiguate `S.isPrefixOf` bs, pure $ pure CollidedHash)
+    ]
+    (pure Nothing)
 
 commit, tree, blob :: Bs s
 commit = "commit "

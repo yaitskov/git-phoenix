@@ -8,7 +8,7 @@ import Data.Git.Phoenix.App
 import Data.Git.Phoenix.Io
 import Data.Git.Phoenix.Object
 import Data.Git.Phoenix.Prelude
-import Lazy.Scope as S
+import Lazy.Scope qualified as S
 
 disambiguateByPair :: PhoenixM m => GitObjType -> [FilePath] -> m [FilePath]
 disambiguateByPair tt links =

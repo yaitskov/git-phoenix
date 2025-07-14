@@ -15,7 +15,8 @@ import Data.Time.Clock.System
 import Data.Time.Format
 import Text.Regex.TDFA.ByteString.Lazy
 import Text.Regex.TDFA
-import Lazy.Scope ( toLbs, unScope, bs2Scoped )
+
+
 
 data CommitObject
   = CommitObject

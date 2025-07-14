@@ -7,18 +7,17 @@ import Data.Word8 qualified as W
 import Lazy.Scope as S
 import Relude
 
-type LbsPair = (LByteString, LByteString)
-
 extractField ::
   Monad m =>
   Word8 -> Bs s -> (Bs s -> LazyT s m  (Bs s, Bs s)) -> Bs s -> LazyT s m (Bs s, Bs s)
 extractField b field parseValue bs =
   case S.dropWhile (/= b) bs of
     "" -> pure ("", "")
-    bs' ->
-      ifM (field `S.isPrefixOfM` bs')
-         (parseValue =<<  (`S.drop` bs') <$> S.lengthM field)
-         (extractField b field parseValue $ S.drop 1 bs')
+    bs' -> condM
+      [ ( field `S.isPrefixOf` bs'
+        , parseValue (S.length field `S.drop` bs') )
+      ]
+      (extractField b field parseValue $ S.drop 1 bs')
 
 extractParent :: Monad m => Bs s -> LazyT s m (Bs s, Bs s)
 extractParent =

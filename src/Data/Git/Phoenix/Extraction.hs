@@ -11,7 +11,7 @@ import Data.Git.Phoenix.Repo
 import Data.Git.Phoenix.Sha
 import Data.Git.Phoenix.ShaCollision
 import Data.Git.Phoenix.Tree
-import Lazy.Scope as S
+
 
 readCommitObject :: forall m. PhoenixExtractM m => GitPath Commit -> m (Maybe (GitPath Commit), GitPath Tree)
 readCommitObject gop = go . (</> toFp gop) . untag =<< asks uberDir
