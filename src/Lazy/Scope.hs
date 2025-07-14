@@ -5,9 +5,9 @@ module Lazy.Scope
   , Bs
   , toBs
   , Scoped
-  , collapse
-  , collapse_
-  , collapseScoped
+  -- , collapse
+  -- , collapse_
+  -- , collapseScoped
   , WithFile (..)
   , hSeek
   , hTell
@@ -61,32 +61,32 @@ import UnliftIO (MonadUnliftIO (..))
 import UnliftIO.IO qualified as U
 
 
-collapse :: (NFData a, MonadUnliftIO m) => (forall s. LazyT s m a) -> m a
-collapse (LazyT m) = do
-  -- @rnf r `seq` pure r@ is not working
-  !r <- m
-  case rnf r of
-    () -> pure r
+-- collapse :: (NFData a, MonadUnliftIO m) => (forall s. LazyT s m a) -> m a
+-- collapse (LazyT m) = do
+--   -- @rnf r `seq` pure r@ is not working
+--   !r <- m
+--   case rnf r of
+--     () -> pure r
 
-collapse_ :: MonadUnliftIO m => (forall s. LazyT s m ()) -> m ()
-collapse_ (LazyT m) = do
-  -- @rnf r `seq` pure r@ is not working
-  !r <- m
-  case r of
-    () -> pure r
+-- collapse_ :: MonadUnliftIO m => (forall s. LazyT s m ()) -> m ()
+-- collapse_ (LazyT m) = do
+--   -- @rnf r `seq` pure r@ is not working
+--   !r <- m
+--   case r of
+--     () -> pure r
 
-collapseScoped :: (NFData a, MonadUnliftIO m) => (forall s. LazyT s m (Scoped s a)) -> m a
-collapseScoped (LazyT m) = do
-  -- @rnf r `seq` pure r@ is not working
-  !(Scoped !r) <- m
-  case rnf r of
-    () -> pure r
+-- collapseScoped :: (NFData a, MonadUnliftIO m) => (forall s. LazyT s m (Scoped s a)) -> m a
+-- collapseScoped (LazyT m) = do
+--   -- @rnf r `seq` pure r@ is not working
+--   !(Scoped !r) <- m
+--   case rnf r of
+--     () -> pure r
 
 class WithFile a where
   -- withFile       :: a -> IOMode -> (Handle s -> LazyT s m r) -> LazyT s m r
   -- withTempFile   ::
-  withBinaryFile :: MonadUnliftIO m =>
-    a -> IOMode -> (Handle s -> LazyT s m r) -> LazyT s m r
+  withBinaryFile :: (NFData r, MonadUnliftIO m) =>
+    a -> IOMode -> (Handle s -> LazyT s m r) -> m r
 
   -- withBinaryTempFile ::
   -- withTempFileWithDefaultPermissions
@@ -94,7 +94,8 @@ class WithFile a where
 
 instance WithFile FilePath where
   {-# INLINE withBinaryFile #-}
-  withBinaryFile fp mode cb = U.withBinaryFile fp mode (\h -> cb (Handle h))
+  withBinaryFile fp mode cb =
+    U.withBinaryFile fp mode (\h -> unLazy (cb (Handle h)))
 
 hSeek :: MonadIO m => Handle s -> SeekMode -> Integer -> LazyT s m ()
 hSeek (Handle h) sm n = LazyT $! U.hSeek h sm n
@@ -190,7 +191,7 @@ span p (Bs lbs) =
     (x, y) -> (Bs x, Bs y)
 
 unScope :: (NFData a, Monad m) => Scoped s a -> LazyT s m a
-unScope (Scoped a) =
+unScope (Scoped !a) =
   case rnf a of
     () -> pure a
 

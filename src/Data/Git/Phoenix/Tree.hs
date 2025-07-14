@@ -90,19 +90,18 @@ extractTree treeHash = do
         save bs = do
             destDir <- getDestDir
             saveCompressedBs (destDir </> toFp trH) bs
-      rl <- collapse $ do
-        withCompressedH treePath $ \cTreeBs treeBs ->
-          parseTreeObject treePath cTreeBs treeBs >>= onRight_ (\_ -> save treeBs)
+      rl <- withCompressedH treePath $
+            \cTreeBs treeBs ->
+              parseTreeObject treePath cTreeBs treeBs >>= onRight_ (\_ -> save treeBs)
       shas <- case rl of
         Right shas' -> pure shas'
         Left cbs -> do
           uniPath <- uniqBs (GitPath @Tree treePath) cbs TreeType
-          collapse $ do
-            withCompressed uniPath
-              (\ubs -> do
-                  save ubs
-                  unScope (bs2Scoped readTreeShas $ dropTreeHeader ubs)
-              )
+          withCompressed uniPath
+            (\ubs -> do
+                save ubs
+                unScope (bs2Scoped readTreeShas $ dropTreeHeader ubs)
+            )
       pure shas
 
     copyTreeLinks destDir (dof, binSha) = do
@@ -116,7 +115,7 @@ extractTree treeHash = do
           saveTree bs = do
             saveBlob bs
             unScope (bs2Scoped readTreeShas $ dropTreeHeader bs)
-      nonRec <- collapse $ do
+      nonRec <-
         withCompressedH absSha $ \cbs bs ->
           classifyGitObject bs >>= \case
             Just BlobType
@@ -134,7 +133,7 @@ extractTree treeHash = do
           mapM_ (copyTreeLinks destDir) rows
         Collision cbs' -> do
           uniPath <- uniqBs shaP cbs' (dofToGitObjType dof)
-          !lr <- collapse $ do
+          !lr <-
             withCompressed uniPath $ \ubs ->
               classifyGitObject ubs >>= \case
                 Just BlobType -> Left <$> saveBlob ubs

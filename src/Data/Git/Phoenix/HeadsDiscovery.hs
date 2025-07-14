@@ -55,7 +55,7 @@ readCommitObject gop =
 
     go :: FilePath -> m [CommitObject]
     go absGop = do
-      lr <- S.collapse $ do
+      lr <-
         withCompressedH absGop $ \cbs bs ->
           classifyGitObject bs >>= \case
             Just BlobType -> pure $ Right []

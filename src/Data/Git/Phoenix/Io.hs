@@ -14,26 +14,27 @@ instance (Monad m, HasInHandlesSem m) => HasInHandlesSem (ResourceT m) where
 
 data Compressed
 
-withHandleX :: (MonadUnliftIO m, HasInHandlesSem m) =>
-  IOMode -> FilePath -> (Handle s -> LazyT s m a) -> LazyT s m a
+withHandleX :: (NFData a, MonadUnliftIO m, HasInHandlesSem m) =>
+  IOMode -> FilePath -> (Handle s -> LazyT s m a) -> m a
 withHandleX mode fp a = do
-  s <- lift getInHandlesSem
+  s <- getInHandlesSem
   bracket_ (waitQSem s) (signalQSem s) $
     withBinaryFile fp mode a
 
-withHandle :: (MonadUnliftIO m, HasInHandlesSem m) =>
-  FilePath -> (Handle s -> LazyT s m a) -> LazyT s m a
+
+withHandle :: (NFData a, MonadUnliftIO m, HasInHandlesSem m) =>
+  FilePath -> (Handle s -> LazyT s m a) -> m a
 withHandle = withHandleX ReadMode
 
-withCompressedH :: (MonadUnliftIO m, HasInHandlesSem m) =>
+withCompressedH :: (NFData a, MonadUnliftIO m, HasInHandlesSem m) =>
   FilePath ->
   (Tagged Compressed (Bs s) -> Bs s -> LazyT s m a) ->
-  LazyT s m a
+  m a
 withCompressedH fp a =
   withHandle ($(tr "/fp") fp) $ \inH -> hGetContents inH >>= (\cbs -> a (Tagged cbs) $ mapLbs decompress cbs)
 
-withCompressed :: (MonadUnliftIO m, HasInHandlesSem m) =>
-  FilePath -> (Bs s -> LazyT s m a) -> LazyT s m a
+withCompressed :: (NFData a, MonadUnliftIO m, HasInHandlesSem m) =>
+  FilePath -> (Bs s -> LazyT s m a) -> m a
 withCompressed fp a = withCompressedH fp (\_cbs bs -> a bs)
 
 writeBinaryFile :: MonadUnliftIO m => FilePath -> IOMode -> (IO.Handle -> m ()) -> m ()

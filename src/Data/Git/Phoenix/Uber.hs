@@ -30,11 +30,11 @@ gitObjectFilePath :: GitObject -> FilePath
 gitObjectFilePath = uncurry (</>) . I.splitAt 2 . showDigest . gobHash
 
 mkGitObject :: forall m. PhoenixM m => FilePath -> m (Maybe GitObject)
-mkGitObject fp = S.collapse $ unScope =<< go
+mkGitObject fp = go
   where
-    go :: forall s. LazyT s m (Scoped s (Maybe GitObject))
+    go :: m (Maybe GitObject)
     go =
-      withHandle fp $ \inH -> do
+      withHandle fp $ \inH -> unScope =<< do
         magicBs <- S.hGet inH 2
         if zlibP magicBs
           then do
@@ -71,14 +71,13 @@ replaceSymLinkWithDisambiguate :: MonadUnliftIO m => FilePath -> GitObject -> m 
 replaceSymLinkWithDisambiguate uberGob gob = do
   firstGobOrigin <- L8.pack <$> getSymbolicLinkTarget uberGob
   removeFile uberGob
-  collapse_ $ do
-    S.withBinaryFile uberGob WriteMode $ \oh ->
-      hPutBs oh . mconcat $ (compressedDisambiguate : fmap toBs [
-                              B.encode $ L.length firstGobOrigin
-                             , firstGobOrigin
-                             , B.encode $ L.length gobPacked
-                             , gobPacked
-                             ])
+  S.withBinaryFile uberGob WriteMode $ \oh ->
+    hPutBs oh . mconcat $ (compressedDisambiguateBs : fmap toBs [
+                            B.encode $ L.length firstGobOrigin
+                           , firstGobOrigin
+                           , B.encode $ L.length gobPacked
+                           , gobPacked
+                           ])
   where
     gobPacked = L8.pack $ gobOrigin gob
 

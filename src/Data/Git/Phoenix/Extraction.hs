@@ -31,7 +31,7 @@ readCommitObject gop = go . (</> toFp gop) . untag =<< asks uberDir
                         <$> (Just . shaToPath . L8.unpack <$> toLbs ph)
                         <*> ( $(tr "/treeComit") . shaToPath . L8.unpack <$> toLbs treeComit)
     go absGop = do
-      lr <- collapse $ do
+      lr <-
         withCompressedH absGop $ \cbs bs ->
           classifyGitObject bs >>= \case
             Just BlobType -> fail $ show gop <> " is Git blob but expected Git commit"
@@ -43,11 +43,10 @@ readCommitObject gop = go . (</> toFp gop) . untag =<< asks uberDir
         Right cmt -> pure cmt
         Left cbs -> do
             uniPath <- uniqBs gop cbs CommitType
-            collapse $ do
-              withCompressed uniPath $ \ubs ->
-                classifyGitObject ubs >>= \case
-                  Just CommitType -> goCommit ubs
-                  ops -> fail $ "Uniq BS of " <> show gop <> " is not commit but " <> show ops
+            withCompressed uniPath $ \ubs ->
+              classifyGitObject ubs >>= \case
+                Just CommitType -> goCommit ubs
+                ops -> fail $ "Uniq BS of " <> show gop <> " is not commit but " <> show ops
 
 extractCommit :: PhoenixExtractM m => GitPath Commit -> m ()
 extractCommit ohp = do

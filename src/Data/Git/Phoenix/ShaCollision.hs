@@ -15,12 +15,11 @@ disambiguateByPair tt links =
   fmap (snd . head) . groupWith fst . sort . catMaybes <$> mapM go links
   where
     go l =
-      collapse $ do
-        withCompressed l $ \bs ->
-          classifyGitObject bs >>= \case
-            Just x | x == tt -> Just . (, l) <$> S.toLbs bs
-                   | otherwise -> pure Nothing
-            Nothing -> pure Nothing
+      withCompressed l $ \bs ->
+        classifyGitObject bs >>= \case
+          Just x | x == tt -> Just . (, l) <$> S.toLbs bs
+                 | otherwise -> pure Nothing
+          Nothing -> pure Nothing
 
 uniqBs :: PhoenixExtractM m =>
   GitPath x ->

@@ -15,7 +15,7 @@ import Data.Time.Clock.System
 import Data.Time.Format
 import Text.Regex.TDFA.ByteString.Lazy
 import Text.Regex.TDFA
-import Lazy.Scope ( collapse, toLbs, unScope, bs2Scoped )
+import Lazy.Scope ( toLbs, unScope, bs2Scoped )
 
 data CommitObject
   = CommitObject
@@ -47,7 +47,7 @@ readCommitObject = go
 
     go :: FilePath -> m [CommitObject]
     go absGop = do
-      lr <- collapse $ do
+      lr <-
         withCompressedH absGop $ \cbs bs ->
           classifyGitObject bs >>= \case
             Just BlobType -> pure $ Right []

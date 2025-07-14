@@ -6,7 +6,7 @@ import Data.ByteString.Lazy qualified as L
 import Data.ByteString.Lazy.Char8 qualified as L8
 import Data.Git.Phoenix.Prelude
 import Lazy.Scope as S
-import System.IO.Unsafe
+
 
 data GitObjType = CommitType | TreeType | BlobType | CollidedHash deriving (Show, Eq)
 
@@ -26,15 +26,17 @@ classifyGitObject bs =
      (pure $ pure TreeType)
      (ifM (commit `S.isPrefixOfM` bs)
        (pure $ pure CommitType)
-       (ifM (disambiguate `S.isPrefixOfM` bs)
+       (ifM (toBs disambiguate `S.isPrefixOfM` bs)
           (pure $ pure CollidedHash)
          (pure Nothing))))
 
-commit, tree, blob, disambiguate :: Bs s
-disambiguate = "disambigate "
+commit, tree, blob :: Bs s
 commit = "commit "
 blob = "blob "
 tree = "tree "
+
+disambiguate :: LByteString
+disambiguate = "disambigate "
 
 gitObjectP :: Monad m => Bs s -> LazyT s m Bool
 gitObjectP bs =
@@ -43,16 +45,16 @@ gitObjectP bs =
     Just CollidedHash -> False
     Just _ -> True
 
-compressedDisambiguate :: Bs s
-compressedDisambiguate =
-  mapLbs
-    (compressWith
-     (defaultCompressParams { compressLevel = CompressionLevel 0 }))
-    disambiguate
+compressedDisambiguate :: LByteString
+compressedDisambiguate = compressWith params disambiguate
+  where
+    params = defaultCompressParams { compressLevel = CompressionLevel 0 }
+
+compressedDisambiguateBs :: Bs s
+compressedDisambiguateBs = toBs compressedDisambiguate
 
 compressedDisambiguateLen :: Int64
-compressedDisambiguateLen =
-  unsafePerformIO (collapse $ lengthM compressedDisambiguate)
+compressedDisambiguateLen = L.length compressedDisambiguate
 
 encodedIntLen :: Int64
 encodedIntLen = L.length . B.encode $ L.length ""
