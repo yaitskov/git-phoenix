@@ -3,6 +3,7 @@ module Lazy.Scope.GetContents where
 import Control.Exception (ioError)
 import Data.ByteString qualified as S
 import Data.ByteString.Lazy.Internal
+import Lazy.Scope.Bs
 import Lazy.Scope.Type
 import Relude hiding (Handle)
 import System.IO.Error (mkIOError, illegalOperationErrorType)

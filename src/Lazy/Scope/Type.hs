@@ -5,20 +5,6 @@ import Relude hiding (Handle)
 import System.IO qualified as IO
 import UnliftIO (MonadUnliftIO (..))
 
-newtype Scoped s a = Scoped a deriving (Show, Eq, NFData, Functor)
-
-instance Applicative (Scoped s) where
-  pure = Scoped
-  {-# INLINE pure #-}
-  liftA2 f (Scoped a) (Scoped b) = Scoped $ f a b
-  {-# INLINE liftA2 #-}
-
-newtype Bs s = Bs LByteString deriving (Show, Eq, Ord, NFData, Semigroup, IsString, Monoid)
-
-toBs :: LByteString -> Bs s
-toBs = Bs
-{-# INLINE toBs #-}
-
 newtype Handle s = Handle IO.Handle deriving (Show, Eq)
 newtype HandlePosn s = HandlePosn IO.HandlePosn deriving (Show, Eq)
 

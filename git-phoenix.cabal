@@ -191,6 +191,9 @@ library
     Lazy.Scope
     Lazy.Scope.GetContents
     Lazy.Scope.Type
+    Lazy.Scope.Bs
+    Lazy.Scope.Io
+    Lazy.Scope.Scoped
   other-modules:
     Paths_git_phoenix
   autogen-modules:
