@@ -188,18 +188,11 @@ library
     Data.Git.Phoenix.ShaCollision
     Data.Git.Phoenix.Tree
     Data.Git.Phoenix.Uber
-    Lazy.Scope
-    Lazy.Scope.GetContents
-    Lazy.Scope.Type
-    Lazy.Scope.Bs
-    Lazy.Scope.Io
-    Lazy.Scope.Scoped
   other-modules:
     Paths_git_phoenix
   autogen-modules:
     Paths_git_phoenix
   build-depends:
-    , transformers            < 1
     , base                    < 5
     , binary                  < 1
     , conduit                 < 2
@@ -208,7 +201,7 @@ library
     , deepseq                 < 2
     , extra                   < 2
     , filepath                < 2
-    --     , lazy-scope              < 1
+    , lazy-scope              < 1
     , lens                    < 6
     , memory                  < 1
     , pretty-hex              < 2
