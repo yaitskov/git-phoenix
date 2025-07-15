@@ -8,7 +8,7 @@
   "lazy-scope": {
     "branch": "master",
     "repo": "/home/dan/pro/haskell/my/lazy-scope",
-    "rev": "e8bbe21e8127e3598e803ce9435d4d0ed184f982",
+    "rev": "397f2a1face22c06f0363644689c8ae280f3977f",
     "type": "git"
   },
   "upload-doc-to-hackage": {

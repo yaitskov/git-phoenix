@@ -89,7 +89,7 @@ extractTree treeHash = do
         save :: forall s. Bs s -> LazyT s m ()
         save bs = do
             destDir <- getDestDir
-            saveCompressedBs (destDir </> toFp trH) bs
+            saveCompressedBs (destDir </> toFp trH) =<< toLbs bs
       rl <- withCompressedH treePath $
             \cTreeBs treeBs ->
               parseTreeObject treePath cTreeBs treeBs >>= onRight_ (\_ -> save treeBs)
@@ -110,7 +110,7 @@ extractTree treeHash = do
       let shaP = binSha2Path binSha
           absSha = udr </> toFp shaP
           saveBlob :: forall s. Bs s -> LazyT s m ()
-          saveBlob = saveCompressedBs (destDir </> toFp shaP)
+          saveBlob = toLbs >=> saveCompressedBs (destDir </> toFp shaP)
           saveTree :: forall s. Bs s -> LazyT s m [(DOF, LByteString)]
           saveTree bs = do
             saveBlob bs

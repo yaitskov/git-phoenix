@@ -2,15 +2,26 @@ module Data.Git.Phoenix.Extraction where
 
 import Data.ByteString.Lazy.Char8 qualified as L8
 import Data.Git.Phoenix.App
-import Data.Git.Phoenix.CmdArgs
-import Data.Git.Phoenix.Commit
+    ( PhoenixExtractConf(destGitDir, uberDir), PhoenixExtractM )
+import Data.Git.Phoenix.CmdArgs ( ShaPrefix )
+import Data.Git.Phoenix.Commit ( extractParent, extractTreeHash )
 import Data.Git.Phoenix.Io
+    ( writeBinaryFile,
+      hPutLbs,
+      saveCompressedBs,
+      withCompressed,
+      withCompressedH )
 import Data.Git.Phoenix.Object
+    ( classifyGitObject,
+      toCommitSha,
+      GitObjType(CommitType, BlobType, TreeType, CollidedHash),
+      GitObjTypeG(Tree, Commit),
+      GitPath(..) )
 import Data.Git.Phoenix.Prelude
-import Data.Git.Phoenix.Repo
-import Data.Git.Phoenix.Sha
-import Data.Git.Phoenix.ShaCollision
-import Data.Git.Phoenix.Tree
+import Data.Git.Phoenix.Repo ( initGitRepo )
+import Data.Git.Phoenix.Sha ( shaToPath )
+import Data.Git.Phoenix.ShaCollision ( uniqBs )
+import Data.Git.Phoenix.Tree ( extractTree )
 
 
 readCommitObject :: forall m. PhoenixExtractM m => GitPath Commit -> m (Maybe (GitPath Commit), GitPath Tree)
@@ -22,9 +33,7 @@ readCommitObject gop = go . (</> toFp gop) . untag =<< asks uberDir
         ("", _) -> fail $ show gop <> " does not have tree field"
         (treeComit, bs') -> do
           gitDir <- untag <$> asks destGitDir
-          saveCompressedBs
-            (gitDir </> ".git" </> "objects" </> toFp gop)
-            bs
+          saveCompressedBs (gitDir </> ".git" </> "objects" </> toFp gop) =<< toLbs bs
           extractParent bs' >>= \case
             ("", _) -> (Nothing, ) . shaToPath . L8.unpack <$> toLbs treeComit
             (!ph, _) -> (,)

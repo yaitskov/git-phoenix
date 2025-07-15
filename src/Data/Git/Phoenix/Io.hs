@@ -15,7 +15,7 @@ instance (Monad m, HasInHandlesSem m) => HasInHandlesSem (ResourceT m) where
 data Compressed
 
 withHandleX :: (NFData a, MonadUnliftIO m, HasInHandlesSem m) =>
-  IOMode -> FilePath -> (Handle s -> LazyT s m a) -> m a
+  IOMode -> FilePath -> (forall s. Handle s -> LazyT s m a) -> m a
 withHandleX mode fp a = do
   s <- getInHandlesSem
   bracket_ (waitQSem s) (signalQSem s) $
@@ -23,18 +23,18 @@ withHandleX mode fp a = do
 
 
 withHandle :: (NFData a, MonadUnliftIO m, HasInHandlesSem m) =>
-  FilePath -> (Handle s -> LazyT s m a) -> m a
+  FilePath -> (forall s. Handle s -> LazyT s m a) -> m a
 withHandle = withHandleX ReadMode
 
 withCompressedH :: (NFData a, MonadUnliftIO m, HasInHandlesSem m) =>
   FilePath ->
-  (Tagged Compressed (Bs s) -> Bs s -> LazyT s m a) ->
+  (forall s. Tagged Compressed (Bs s) -> Bs s -> LazyT s m a) ->
   m a
 withCompressedH fp a =
   withHandle ($(tr "/fp") fp) $ \inH -> hGetContents inH >>= (\cbs -> a (Tagged cbs) $ mapLbs decompress cbs)
 
 withCompressed :: (NFData a, MonadUnliftIO m, HasInHandlesSem m) =>
-  FilePath -> (Bs s -> LazyT s m a) -> m a
+  FilePath -> (forall s. Bs s -> LazyT s m a) -> m a
 withCompressed fp a = withCompressedH fp (\_cbs bs -> a bs)
 
 writeBinaryFile :: MonadUnliftIO m => FilePath -> IOMode -> (IO.Handle -> m ()) -> m ()
@@ -44,10 +44,10 @@ hPutLbs :: MonadIO m => IO.Handle -> LByteString -> m ()
 hPutLbs h bs = liftIO $ L.hPut h bs
 
 -- | just 'copyFile' is not possible due to trash after archive
-saveCompressedBs :: MonadUnliftIO m => FilePath -> Bs s -> LazyT s m ()
+saveCompressedBs :: MonadUnliftIO m => FilePath -> LByteString -> m ()
 saveCompressedBs fp bs = do
-  lift $ createDirectoryIfMissing False $ dropFileName fp
-  withBinaryFile ($(tr "/fp") fp) WriteMode $ \h -> hPutBs h $ mapLbs compress bs
+  createDirectoryIfMissing False $ dropFileName fp
+  withBinaryFile ($(tr "/fp") fp) WriteMode $ \h -> S.hPut h $ compress bs
 
 readNumber :: MonadIO m => Int -> Int -> m Int
 readNumber minVal maxVal = go
