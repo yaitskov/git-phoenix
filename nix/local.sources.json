@@ -5,12 +5,6 @@
     "rev": "da5af46a09eeb2b1c8f4193d626727d5b7460601",
     "type": "git"
   },
-  "lazy-scope": {
-    "branch": "master",
-    "repo": "/home/dan/pro/haskell/my/lazy-scope",
-    "rev": "397f2a1face22c06f0363644689c8ae280f3977f",
-    "type": "git"
-  },
   "upload-doc-to-hackage": {
     "branch": "master",
     "description": "Automated workaround for uploading Cabal docs to hackage",

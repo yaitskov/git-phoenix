@@ -14,13 +14,17 @@ in hfinal: hprev:
 (listToAttrs (map (a:
   nameValuePair a.name
     (dontCheck (hfinal.callCabal2nix a.name a.source { }))) [
-      { name = "lazy-scope";  source = sources.lazy-scope; }
     ])) // {
       "upload-doc-to-hackage" = hfinal.callPackage sources.upload-doc-to-hackage {};
       "th-lock" = hfinal.callHackageDirect
         { pkg = "th-lock";
           ver = "0.0.4";
           sha256 = "sha256-chFv77J0oWLzf4zAX4Awv7uhQEhiPegvPgrLWNaEuhs=";
+        } {};
+      "lazy-scope" = hfinal.callHackageDirect
+        { pkg = "lazy-scope";
+          ver = "0.0.1";
+          sha256 = "sha256-k8eH1JFcEGaxMS2cgCsR1GTMooRHfyT+vWSis7WmMC8=";
         } {};
 
       "haddock-use-refs" = hfinal.callHackageDirect
