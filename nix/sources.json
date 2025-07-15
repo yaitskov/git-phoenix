@@ -5,10 +5,10 @@
         "homepage": null,
         "owner": "yaitskov",
         "repo": "lazy-scope",
-        "rev": "49f4dc081c7cb99ee27e97fb7b995328ca3fcba9",
-        "sha256": "1zk06gdg4fyi6w16cy4v119zxdlwdlq9i6w5mdqzs2g0hywwh32l",
+        "rev": "397f2a1face22c06f0363644689c8ae280f3977f",
+        "sha256": "1djbc5lj0cxn7kv23xiqbz0sqrkvi79mha825y0ngar5aiw43y96",
         "type": "tarball",
-        "url": "https://github.com/yaitskov/lazy-scope/archive/49f4dc081c7cb99ee27e97fb7b995328ca3fcba9.tar.gz",
+        "url": "https://github.com/yaitskov/lazy-scope/archive/397f2a1face22c06f0363644689c8ae280f3977f.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nixpkgs": {
