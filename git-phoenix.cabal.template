@@ -1,12 +1,13 @@
 cabal-version: 3.0
 name:          git-phoenix
-version:       0.0.2
+version:       0.0.3
 
 synopsis:      Recover Git repositories from disk recovery tool output (photorec)
 description:
 
 homepage:      http://github.com/yaitskov/git-phoenix
 license:       BSD-3-Clause
+license-file:  LICENSE
 author:        Daniil Iaitskov
 maintainer:    dyaitskov@gmail.com
 copyright:     Daniil Iaitkov 2025
